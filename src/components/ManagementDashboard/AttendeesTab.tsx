@@ -1,43 +1,55 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Search, UserCheck, AlertTriangle, ShieldCheck, Download, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Download, RefreshCw, UserCheck } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
-
-const MOCK_ATTENDEE_DIRECTORY = [
-  { id: 'att-1', name: 'K. Nabidul Hasan', studentId: 'UNI-2026-8472', ticket: 'EVT-2026-STUDENT-8472', dept: 'CS & AI', tier: 'Tier 1 Priority', status: 'Confirmed' },
-  { id: 'att-2', name: 'Aarav Shah', studentId: 'UNI-2026-8473', ticket: 'EVT-10482', dept: 'Software Eng', tier: 'General', status: 'Checked In' },
-  { id: 'att-3', name: 'Riya Patel', studentId: 'UNI-2026-8474', ticket: 'EVT-10481', dept: 'Data Science', tier: 'General', status: 'Checked In' },
-  { id: 'att-4', name: 'Unknown Device', studentId: 'ANON-UNVERIFIED', ticket: 'EVT-10479', dept: 'External', tier: 'Unverified', status: 'Flagged' },
-  { id: 'att-5', name: 'Elena Rostova', studentId: 'UNI-2026-8475', ticket: 'EVT-10478', dept: 'Robotics', tier: 'VIP Speaker', status: 'Checked In' },
-  { id: 'att-6', name: 'Marcus Vance', studentId: 'UNI-2026-8476', ticket: 'EVT-10476', dept: 'Cybersecurity', tier: 'General', status: 'Flagged' },
-  { id: 'att-7', name: 'Sofia Chen', studentId: 'UNI-2026-8477', ticket: 'EVT-10475', dept: 'Bio-Informatics', tier: 'General', status: 'Checked In' },
-  { id: 'att-8', name: 'Zayn Malik', studentId: 'UNI-2026-8478', ticket: 'EVT-10472', dept: 'Electrical Eng', tier: 'Tier 1 Priority', status: 'Confirmed' },
-  { id: 'att-9', name: 'Devika Sharma', studentId: 'UNI-2026-8479', ticket: 'EVT-10470', dept: 'AI Ethics', tier: 'General', status: 'Confirmed' },
-];
 
 export function AttendeesTab() {
   const [searchTerm, setSearchTerm] = useState('');
-  const { addToast } = useEventSystem();
+  const [attendees, setAttendees] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { selectedEvent, exportAttendeesCsv } = useEventSystem();
 
-  const filtered = MOCK_ATTENDEE_DIRECTORY.filter(
-    (a) =>
-      a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.dept.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.ticket.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleExport = () => {
-    addToast('info', 'Export Generated', 'Attendee verification roster saved to CSV cache');
+  const fetchAttendees = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/registrations/attendees?eventId=${selectedEvent.id}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.attendees)) {
+        setAttendees(data.attendees);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchAttendees();
+  }, [selectedEvent.id]);
+
+  const filtered = attendees.filter(
+    (a) =>
+      a.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.dept?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.ticket?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="rounded-2xl glass-panel p-5 sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06] mb-5">
         <div>
-          <h2 className="text-lg font-bold text-white tracking-tight">Attendee Directory</h2>
-          <p className="text-xs text-slate-400">All registered attendees and real-time pass credentials</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-white tracking-tight">Attendee Directory</h2>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              {filtered.length} Attendees
+            </span>
+          </div>
+          <p className="text-xs text-slate-400">
+            {selectedEvent.name} · Real-time pass roster and check-in statuses
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -53,11 +65,19 @@ export function AttendeesTab() {
           </div>
 
           <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-xs font-medium text-slate-300 transition-colors"
+            onClick={fetchAttendees}
+            title="Refresh Roster"
+            className="p-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:text-white transition-colors"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
+            onClick={exportAttendeesCsv}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-xs font-medium text-slate-300 hover:text-white transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Export</span>
+            <span className="hidden sm:inline">Export CSV</span>
           </button>
         </div>
       </div>
@@ -67,10 +87,10 @@ export function AttendeesTab() {
           <thead>
             <tr className="border-b border-white/[0.06] text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
               <th className="pb-3 pl-2">Attendee Name</th>
-              <th className="pb-3">Student ID</th>
+              <th className="pb-3">Enrollment ID</th>
               <th className="pb-3">Department</th>
-              <th className="pb-3">Ticket ID</th>
-              <th className="pb-3">Tier</th>
+              <th className="pb-3">Ticket Ref</th>
+              <th className="pb-3">Seat Tier</th>
               <th className="pb-3 pr-2 text-right">Status</th>
             </tr>
           </thead>
@@ -97,6 +117,14 @@ export function AttendeesTab() {
                 </td>
               </tr>
             ))}
+
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-slate-400">
+                  {isLoading ? 'Loading attendee roster...' : 'No attendees found for this event.'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

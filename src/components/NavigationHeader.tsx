@@ -10,7 +10,7 @@ interface NavigationHeaderProps {
 }
 
 export function NavigationHeader({ onOpenDemoToolbar }: NavigationHeaderProps) {
-  const { viewMode, setViewMode, resetDemoStats } = useEventSystem();
+  const { viewMode, setViewMode, resetDemoStats, currentUser, setIsAuthModalOpen } = useEventSystem();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/[0.06] bg-[#0B0F19]/80 backdrop-blur-xl">
@@ -78,8 +78,20 @@ export function NavigationHeader({ onOpenDemoToolbar }: NavigationHeaderProps) {
           </button>
         </div>
 
-        {/* Diagnostic Tools & Terminal Actions */}
+        {/* Diagnostic Tools, Auth & Terminal Actions */}
         <div className="flex items-center gap-2">
+          {/* Account profile / Auth toggle button */}
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all"
+            title="Switch User / Sign In"
+          >
+            <User className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden sm:inline">
+              {currentUser ? currentUser.name.split(' ')[0] : 'Sign In'}
+            </span>
+          </button>
+
           {onOpenDemoToolbar && (
             <button
               onClick={onOpenDemoToolbar}

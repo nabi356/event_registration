@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   RotateCcw,
   Check,
+  Scan,
 } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
 
@@ -29,6 +30,7 @@ export function DemoToolbarModal({ isOpen, onClose }: DemoToolbarModalProps) {
     simulateFailedCheckIn,
     resetDemoStats,
     addToast,
+    setIsFaceScanGateModalOpen,
   } = useEventSystem();
 
   return (
@@ -111,6 +113,20 @@ export function DemoToolbarModal({ isOpen, onClose }: DemoToolbarModalProps) {
                     <span className="text-[10px] text-rose-400/80">
                       Security alert and blocked pass logged
                     </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onClose();
+                      setIsFaceScanGateModalOpen(true);
+                    }}
+                    className="col-span-2 p-3 rounded-xl bg-blue-600/20 border border-blue-500/35 text-blue-300 hover:bg-blue-600/30 transition-all text-left flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Scan className="w-4 h-4 text-blue-400" />
+                      <span className="text-xs font-semibold">Face Scan Entry Gate</span>
+                    </div>
+                    <span className="text-[10px] text-blue-400 font-mono">LIVE WEBCAM →</span>
                   </button>
                 </div>
               </div>

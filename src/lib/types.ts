@@ -10,11 +10,19 @@ export interface EventItem {
   date: string;
   time: string;
   venue: string;
-  status: 'Registered' | 'Confirmed' | 'Waitlisted';
+  status: 'Registered' | 'Confirmed' | 'Waitlisted' | 'Available';
   ticketId: string;
   seatTier?: string;
   doorsOpen?: string;
   accentColor?: string;
+  startTime?: string | Date;
+  endTime?: string | Date;
+  lat?: number;
+  lng?: number;
+  radiusMeters?: number;
+  capacity?: number;
+  registeredCount?: number;
+  checkedInCount?: number;
 }
 
 export interface CheckInRecord {
@@ -22,10 +30,11 @@ export interface CheckInRecord {
   name: string;
   ticketId: string;
   timeAgo: string;
-  timestamp: Date;
+  timestamp: Date | string;
   status: 'verified' | 'flagged' | 'denied';
   reason?: string;
   avatarSeed?: string;
+  method?: string;
 }
 
 export interface SecuritySettings {
@@ -41,4 +50,18 @@ export interface ToastMessage {
   title: string;
   description: string;
   timestamp: number;
+}
+
+export interface AuthUserData {
+  id: string;
+  name: string;
+  enrollmentNo: string;
+  university: string;
+  email: string;
+  role: 'student' | 'management';
+  department?: string;
+  enrolledYear?: string;
+  hasFaceEnrolled: boolean;
+  faceUpdatedAt?: string | Date;
+  deviceId?: string;
 }

@@ -14,7 +14,9 @@ import {
   ChevronRight,
   X,
   Radio,
+  Scan,
 } from 'lucide-react';
+import { useEventSystem } from '@/context/EventSystemContext';
 
 export type NavItemKey =
   | 'overview'
@@ -132,6 +134,21 @@ export function Sidebar({
             );
           })}
         </nav>
+
+        {/* Face Scan Entry Dedicated Terminal Launcher */}
+        <button
+          onClick={() => {
+            useEventSystem().setIsFaceScanGateModalOpen(true);
+            onCloseMobileDrawer();
+          }}
+          className={`w-full mt-4 flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600/30 to-indigo-600/30 hover:from-blue-600/40 hover:to-indigo-600/40 border border-blue-500/40 text-blue-300 transition-all shadow-md shadow-blue-950/20 ${
+            isCollapsed ? 'justify-center' : ''
+          }`}
+          title="Face Scan Gate Entry"
+        >
+          <Scan className="w-4 h-4 text-blue-400 shrink-0" />
+          {!isCollapsed && <span className="truncate">Face Scan Gate</span>}
+        </button>
       </div>
 
       {/* Bottom system status */}

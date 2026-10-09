@@ -2,12 +2,29 @@
 
 import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, ChevronLeft, ChevronRight, CheckCircle, Tag, Clock } from 'lucide-react';
+import {
+  Calendar,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+  Tag,
+  Clock,
+  UserPlus,
+  UserMinus,
+} from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
 import { EventItem } from '@/lib/types';
 
 export function EventsCarousel() {
-  const { events, selectedEvent, setSelectedEvent, setIsTicketFlipped } = useEventSystem();
+  const {
+    events,
+    selectedEvent,
+    setSelectedEvent,
+    setIsTicketFlipped,
+    registerForEvent,
+    cancelEventRegistration,
+  } = useEventSystem();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -20,6 +37,18 @@ export function EventsCarousel() {
   const handleSelectEvent = (event: EventItem) => {
     setSelectedEvent(event);
     setIsTicketFlipped(false); // Reset to front side
+  };
+
+  const handleRegisterClick = async (e: React.MouseEvent, eventId: string) => {
+    e.stopPropagation();
+    await registerForEvent(eventId);
+  };
+
+  const handleCancelClick = async (e: React.MouseEvent, eventId: string) => {
+    e.stopPropagation();
+    if (confirm('Cancel registration for this event? Your pass will be deactivated.')) {
+      await cancelEventRegistration(eventId);
+    }
   };
 
   return (
@@ -61,6 +90,7 @@ export function EventsCarousel() {
       >
         {events.map((evt) => {
           const isSelected = selectedEvent.id === evt.id;
+          const isRegistered = evt.status === 'Registered' || evt.status === 'Confirmed';
 
           return (
             <motion.div
@@ -89,7 +119,7 @@ export function EventsCarousel() {
 
                   <span
                     className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase ${
-                      evt.status === 'Registered'
+                      isRegistered
                         ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                         : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
                     }`}
@@ -121,11 +151,27 @@ export function EventsCarousel() {
                 </div>
               </div>
 
-              {/* Bottom selection indicator */}
-              <div className="mt-4 pt-2.5 flex items-center justify-between text-[11px]">
-                <span className="font-mono text-slate-400 text-[10px]">
-                  {evt.ticketId}
-                </span>
+              {/* Register / Cancel Actions row */}
+              <div className="mt-4 pt-3 border-t border-white/[0.05] flex items-center justify-between text-[11px]">
+                {isRegistered ? (
+                  <button
+                    onClick={(e) => handleCancelClick(e, evt.id)}
+                    className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-rose-400 transition-colors"
+                    title="Cancel event registration"
+                  >
+                    <UserMinus className="w-3 h-3" />
+                    <span>Cancel Pass</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => handleRegisterClick(e, evt.id)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-600/30 hover:bg-blue-600 border border-blue-500/40 text-[11px] text-blue-300 hover:text-white transition-all font-semibold"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                    <span>Register</span>
+                  </button>
+                )}
+
                 <span
                   className={`font-medium ${
                     isSelected ? 'text-blue-400' : 'text-slate-400'

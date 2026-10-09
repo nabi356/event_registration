@@ -10,6 +10,8 @@ import {
   Activity,
   UserCheck,
   Building,
+  Scan,
+  Plus,
 } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
 
@@ -22,7 +24,15 @@ export function ManagementHeader({
   onToggleMobileSidebar,
   onOpenSettingsModal,
 }: ManagementHeaderProps) {
-  const { selectedEvent, setSelectedEvent, events } = useEventSystem();
+  const {
+    selectedEvent,
+    setSelectedEvent,
+    events,
+    setIsFaceScanGateModalOpen,
+    setIsEventFormModalOpen,
+    setEventToEdit,
+    currentUser,
+  } = useEventSystem();
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
 
   return (
@@ -104,11 +114,28 @@ export function ManagementHeader({
             )}
           </div>
 
-          {/* Date Badge */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>25 OCT 2026</span>
-          </div>
+          {/* Face Scan Gate Entry Button */}
+          <button
+            onClick={() => setIsFaceScanGateModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-xs font-semibold text-white shadow-lg shadow-blue-900/30 transition-all cursor-pointer"
+            title="Open Live Webcam Face Scan Gate Terminal"
+          >
+            <Scan className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Face Scan Entry</span>
+          </button>
+
+          {/* New Event Button */}
+          <button
+            onClick={() => {
+              setEventToEdit(null);
+              setIsEventFormModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
+            title="Create New Campus Event"
+          >
+            <Plus className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden md:inline">New Event</span>
+          </button>
 
           {/* Staff Profile Card */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
@@ -117,10 +144,10 @@ export function ManagementHeader({
             </div>
             <div className="text-left hidden md:block">
               <span className="text-xs font-semibold text-slate-200 block leading-tight">
-                K. Nabidul H.
+                {currentUser?.name || 'K. Nabidul H.'}
               </span>
               <span className="text-[10px] text-slate-400 block leading-tight">
-                Operations Lead
+                {currentUser?.role === 'management' ? 'Operations Admin' : 'Staff Lead'}
               </span>
             </div>
           </div>

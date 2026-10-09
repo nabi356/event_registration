@@ -11,12 +11,13 @@ import {
   ShieldAlert,
   Smartphone,
   ExternalLink,
+  Scan,
 } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
 import { CheckInRecord } from '@/lib/types';
 
 export function LiveCheckInFeed() {
-  const { checkIns } = useEventSystem();
+  const { checkIns, setIsFaceScanGateModalOpen } = useEventSystem();
   const [filter, setFilter] = useState<'all' | 'verified' | 'flagged'>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -50,8 +51,17 @@ export function LiveCheckInFeed() {
           </p>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-2">
+        {/* Filters & Actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsFaceScanGateModalOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-600/25 hover:bg-blue-600/35 border border-blue-500/35 text-xs font-semibold text-blue-300 hover:text-white transition-all shadow-sm"
+            title="Launch Face Scan Entry Screen"
+          >
+            <Scan className="w-3.5 h-3.5" />
+            <span>Face Scan</span>
+          </button>
+
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input

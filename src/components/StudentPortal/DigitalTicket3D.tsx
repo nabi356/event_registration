@@ -31,6 +31,7 @@ export function DigitalTicket3D() {
     qrRefreshKey,
     geoFenceStatus,
     deviceLockStatus,
+    currentUser,
   } = useEventSystem();
 
   // Determine if QR is blocked due to demo states
@@ -128,10 +129,13 @@ export function DigitalTicket3D() {
                   Attendee Name
                 </span>
                 <span className="text-sm font-semibold text-white mt-0.5 block truncate">
-                  {CURRENT_STUDENT.name}
+                  {currentUser?.name || CURRENT_STUDENT.name}
                 </span>
                 <span className="text-[11px] text-slate-400">
-                  {CURRENT_STUDENT.studentId}
+                  {currentUser?.enrollmentNo || CURRENT_STUDENT.studentId}
+                </span>
+                <span className="text-[10px] text-slate-500 block">
+                  {currentUser?.university || 'Apex Institute of Technology'}
                 </span>
               </div>
 
