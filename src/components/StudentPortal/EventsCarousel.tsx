@@ -55,8 +55,14 @@ export function EventsCarousel() {
 
   if (events.length === 0) {
     return (
-      <section className="mb-10 p-6 rounded-2xl glass-panel border border-white/[0.06] text-center">
-        <p className="text-xs text-slate-400">Loading campus events from live database...</p>
+      <section className="mb-10 p-8 rounded-2xl glass-panel border border-white/[0.06] text-center bg-[#0E1524]/40">
+        <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mx-auto mb-2">
+          <Calendar className="w-5 h-5" />
+        </div>
+        <h3 className="text-sm font-semibold text-white mb-1">No Events Published Yet</h3>
+        <p className="text-xs text-slate-400">
+          Only official events created by campus management will be visible here.
+        </p>
       </section>
     );
   }
@@ -65,12 +71,17 @@ export function EventsCarousel() {
     <section className="mb-10">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-sm font-semibold tracking-wider uppercase text-slate-300 flex items-center gap-2">
-            <span>Upcoming Events</span>
-            <span className="text-xs font-normal text-slate-400">({events.length})</span>
-          </h2>
+          <div className="flex items-center gap-2 mb-0.5">
+            <h2 className="text-sm font-semibold tracking-wider uppercase text-slate-300 flex items-center gap-2">
+              <span>Campus Events</span>
+              <span className="text-xs font-normal text-slate-400">({events.length})</span>
+            </h2>
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/25">
+              Management Published
+            </span>
+          </div>
           <p className="text-xs text-slate-400">
-            Swipe or select an event to activate digital credentials
+            Official events published by campus operations. Select an event to inspect credentials.
           </p>
         </div>
 

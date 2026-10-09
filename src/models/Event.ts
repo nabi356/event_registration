@@ -11,6 +11,7 @@ export interface IEvent extends Document {
   radiusMeters: number;
   capacity: number;
   accentColor?: string;
+  createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +28,7 @@ const EventSchema = new Schema<IEvent>(
     radiusMeters: { type: Number, default: 50 },
     capacity: { type: Number, required: true, min: 1 },
     accentColor: { type: String, default: '#3B82F6' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   {
     timestamps: true,

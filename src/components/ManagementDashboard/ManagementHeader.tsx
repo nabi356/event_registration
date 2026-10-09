@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Calendar,
   ChevronDown,
@@ -12,6 +13,7 @@ import {
   Building,
   Scan,
   Plus,
+  LogOut,
 } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
 
@@ -24,6 +26,7 @@ export function ManagementHeader({
   onToggleMobileSidebar,
   onOpenSettingsModal,
 }: ManagementHeaderProps) {
+  const router = useRouter();
   const {
     selectedEvent,
     setSelectedEvent,
@@ -32,6 +35,7 @@ export function ManagementHeader({
     setIsEventFormModalOpen,
     setEventToEdit,
     currentUser,
+    logoutUser,
   } = useEventSystem();
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
 
@@ -157,10 +161,23 @@ export function ManagementHeader({
           {/* Settings Button */}
           <button
             onClick={onOpenSettingsModal}
-            className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all"
+            className="p-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all cursor-pointer"
             aria-label="Operations settings"
           >
             <Settings className="w-4 h-4" />
+          </button>
+
+          {/* Sign Out Button */}
+          <button
+            onClick={() => {
+              logoutUser();
+              router.push('/');
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-rose-500/15 hover:border-rose-500/30 text-xs font-semibold text-slate-300 hover:text-rose-300 transition-all cursor-pointer"
+            title="Sign Out of Management Portal"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sign Out</span>
           </button>
         </div>
       </div>

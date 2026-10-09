@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit, ShieldAlert } from 'lucide-react';
+import { Plus, Edit, ShieldAlert, LogIn, ArrowLeft } from 'lucide-react';
 import { ManagementHeader } from './ManagementHeader';
 import { Sidebar, NavItemKey } from './Sidebar';
 import { MetricCards } from './MetricCards';
@@ -16,6 +17,7 @@ import { EventsCarousel } from '../StudentPortal/EventsCarousel';
 import { useEventSystem } from '@/context/EventSystemContext';
 
 export function ManagementView() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<NavItemKey>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -40,12 +42,22 @@ export function ManagementView() {
         <p className="text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
           The Campus Operations Suite and Gate Management Terminal are restricted to verified administrator and manager accounts. Students cannot access management functions.
         </p>
-        <button
-          onClick={() => setViewMode('student')}
-          className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-blue-900/30"
-        >
-          Return to Student Portal
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            onClick={() => router.push('/student')}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-blue-900/30"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Go to Student Portal</span>
+          </button>
+          <button
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-slate-200 text-xs font-semibold transition-all cursor-pointer"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Sign In as Management</span>
+          </button>
+        </div>
       </div>
     );
   }

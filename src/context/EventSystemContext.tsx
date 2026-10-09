@@ -207,7 +207,9 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
           const parsed: AuthUserData = JSON.parse(storedUser);
           setToken(storedToken);
           setCurrentUser(parsed);
-          if (parsed.role !== 'management' && viewMode === 'management') {
+          if (parsed.role === 'management') {
+            setViewModeState('management');
+          } else {
             setViewModeState('student');
           }
         } catch {
@@ -215,7 +217,7 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
         }
       }
     }
-  }, [viewMode]);
+  }, []);
 
   // Browser Geolocation Detection
   useEffect(() => {

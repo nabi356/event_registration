@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
       radiusMeters: Number(radiusMeters) || 50,
       capacity: Number(capacity),
       accentColor: accentColor || '#3B82F6',
+      createdBy: authUser.userId,
     });
 
     return NextResponse.json({
