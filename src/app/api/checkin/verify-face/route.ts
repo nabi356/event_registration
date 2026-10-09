@@ -11,9 +11,18 @@ import {
   recordFailedScan,
   clearRateLimit,
 } from '@/lib/faceVerification';
+import { getAuthUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    const authUser = getAuthUser(req);
+    if (!authUser || authUser.role !== 'management') {
+      return NextResponse.json(
+        { success: false, error: 'Access restricted: Gate operations restricted to management administrators.' },
+        { status: 403 }
+      );
+    }
+
     await connectToDatabase();
     const body = await req.json();
     const { eventId, faceEmbedding, livenessVerified, presentedEnrollmentNo, terminalId } = body;

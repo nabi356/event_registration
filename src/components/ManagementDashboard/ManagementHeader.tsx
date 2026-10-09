@@ -66,9 +66,11 @@ export function ManagementHeader({
 
             {/* Subtitle with active event name & location */}
             <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
-              <span className="text-slate-300 font-medium">{selectedEvent.name}</span>
+              <span className="text-slate-300 font-medium">
+                {selectedEvent?.name || 'No Event Selected'}
+              </span>
               <span>·</span>
-              <span>{selectedEvent.venue}</span>
+              <span>{selectedEvent?.venue || 'Campus Venue'}</span>
             </div>
           </div>
         </div>
@@ -79,11 +81,11 @@ export function ManagementHeader({
           <div className="relative">
             <button
               onClick={() => setIsEventDropdownOpen(!isEventDropdownOpen)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#111A2E]/80 border border-white/[0.08] hover:border-white/[0.15] text-xs font-medium text-slate-200 transition-all shadow-sm"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#111A2E]/80 border border-white/[0.08] hover:border-white/[0.15] text-xs font-medium text-slate-200 transition-all shadow-sm cursor-pointer"
             >
               <Building className="w-3.5 h-3.5 text-blue-400" />
               <span className="max-w-[140px] sm:max-w-[180px] truncate">
-                {selectedEvent.name}
+                {selectedEvent?.name || 'Select Event'}
               </span>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
             </button>
@@ -100,8 +102,8 @@ export function ManagementHeader({
                       setSelectedEvent(evt);
                       setIsEventDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition-colors flex flex-col ${
-                      selectedEvent.id === evt.id
+                    className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition-colors flex flex-col cursor-pointer ${
+                      selectedEvent?.id === evt.id
                         ? 'bg-blue-600/20 text-blue-300 font-medium'
                         : 'text-slate-300 hover:bg-white/[0.05]'
                     }`}
@@ -140,11 +142,11 @@ export function ManagementHeader({
           {/* Staff Profile Card */}
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
             <div className="w-7 h-7 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-bold">
-              OP
+              {currentUser?.name ? currentUser.name.substring(0, 2).toUpperCase() : 'OP'}
             </div>
             <div className="text-left hidden md:block">
               <span className="text-xs font-semibold text-slate-200 block leading-tight">
-                {currentUser?.name || 'K. Nabidul H.'}
+                {currentUser?.name || 'Operations Lead'}
               </span>
               <span className="text-[10px] text-slate-400 block leading-tight">
                 {currentUser?.role === 'management' ? 'Operations Admin' : 'Staff Lead'}

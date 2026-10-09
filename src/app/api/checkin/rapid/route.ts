@@ -6,9 +6,18 @@ import { Registration } from '@/models/Registration';
 import { CheckIn } from '@/models/CheckIn';
 import { SecurityAlert } from '@/models/SecurityAlert';
 import { verifyDynamicPassToken } from '@/lib/passToken';
+import { getAuthUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    const authUser = getAuthUser(req);
+    if (!authUser || authUser.role !== 'management') {
+      return NextResponse.json(
+        { success: false, error: 'Access restricted: Management role required.' },
+        { status: 403 }
+      );
+    }
+
     await connectToDatabase();
     const body = await req.json();
     const { eventId, identifier, qrToken } = body;

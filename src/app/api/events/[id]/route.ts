@@ -70,3 +70,34 @@ export async function GET(
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authUser = getAuthUser(req);
+    if (!authUser || authUser.role !== 'management') {
+      return NextResponse.json(
+        { success: false, error: 'Access restricted to management administrators.' },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+    await connectToDatabase();
+    const event = await Event.findByIdAndDelete(id);
+
+    if (!event) {
+      return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Event deleted successfully',
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+

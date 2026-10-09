@@ -35,12 +35,12 @@ export function NavigationHeader({ onOpenDemoToolbar }: NavigationHeaderProps) {
           </div>
         </div>
 
-        {/* Polished View Switcher: Student | Management */}
+        {/* Polished View Switcher: Student | Management (Locked for students) */}
         <div className="flex items-center bg-[#131B2E]/90 p-1 rounded-xl border border-white/[0.08] shadow-inner">
           <button
             id="toggle-student-view"
             onClick={() => setViewMode('student')}
-            className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 ${
+            className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 cursor-pointer ${
               viewMode === 'student' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -60,9 +60,18 @@ export function NavigationHeader({ onOpenDemoToolbar }: NavigationHeaderProps) {
           <button
             id="toggle-management-view"
             onClick={() => setViewMode('management')}
-            className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 ${
-              viewMode === 'management' ? 'text-white' : 'text-slate-400 hover:text-slate-200'
+            className={`relative flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 cursor-pointer ${
+              viewMode === 'management'
+                ? 'text-white'
+                : currentUser?.role === 'management'
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-500 hover:text-slate-400'
             }`}
+            title={
+              currentUser?.role === 'management'
+                ? 'Switch to Management Suite'
+                : 'Management portal is restricted to verified administrators'
+            }
           >
             {viewMode === 'management' && (
               <motion.div
@@ -74,6 +83,11 @@ export function NavigationHeader({ onOpenDemoToolbar }: NavigationHeaderProps) {
             <span className="relative z-10 flex items-center gap-1.5">
               <LayoutDashboard className="w-3.5 h-3.5" />
               <span>Management</span>
+              {currentUser?.role !== 'management' && (
+                <span className="text-[10px] text-amber-400/80 bg-amber-400/10 px-1 py-0.2 rounded border border-amber-400/20 font-mono">
+                  Restricted
+                </span>
+              )}
             </span>
           </button>
         </div>
@@ -83,33 +97,41 @@ export function NavigationHeader({ onOpenDemoToolbar }: NavigationHeaderProps) {
           {/* Account profile / Auth toggle button */}
           <button
             onClick={() => setIsAuthModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all cursor-pointer"
             title="Switch User / Sign In"
           >
             <User className="w-3.5 h-3.5 text-blue-400" />
             <span className="hidden sm:inline">
               {currentUser ? currentUser.name.split(' ')[0] : 'Sign In'}
             </span>
+            {currentUser && (
+              <span className={`text-[9px] uppercase px-1 py-0.5 rounded font-mono ${currentUser.role === 'management' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                {currentUser.role}
+              </span>
+            )}
           </button>
 
-          {onOpenDemoToolbar && (
+          {/* Management-Only Diagnostics and Tools */}
+          {currentUser?.role === 'management' && onOpenDemoToolbar && (
             <button
               onClick={onOpenDemoToolbar}
               title="Terminal Diagnostics & Security Controls"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.15] transition-all cursor-pointer"
             >
               <Sliders className="w-3.5 h-3.5 text-blue-400" />
               <span className="hidden md:inline">Terminal Tools</span>
             </button>
           )}
 
-          <button
-            onClick={resetDemoStats}
-            title="Reset Operational Baseline"
-            className="p-1.5 rounded-lg text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-white hover:bg-white/[0.07] transition-all"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
+          {currentUser?.role === 'management' && (
+            <button
+              onClick={resetDemoStats}
+              title="Reset Operational Baseline"
+              className="p-1.5 rounded-lg text-slate-400 bg-white/[0.03] border border-white/[0.06] hover:text-white hover:bg-white/[0.07] transition-all cursor-pointer"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
     </header>

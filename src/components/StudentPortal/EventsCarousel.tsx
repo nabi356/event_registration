@@ -24,6 +24,8 @@ export function EventsCarousel() {
     setIsTicketFlipped,
     registerForEvent,
     cancelEventRegistration,
+    myRegistrations,
+    currentUser,
   } = useEventSystem();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -51,6 +53,14 @@ export function EventsCarousel() {
     }
   };
 
+  if (events.length === 0) {
+    return (
+      <section className="mb-10 p-6 rounded-2xl glass-panel border border-white/[0.06] text-center">
+        <p className="text-xs text-slate-400">Loading campus events from live database...</p>
+      </section>
+    );
+  }
+
   return (
     <section className="mb-10">
       <div className="flex items-center justify-between mb-4">
@@ -68,14 +78,14 @@ export function EventsCarousel() {
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => scroll('left')}
-            className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all"
+            className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all cursor-pointer"
             aria-label="Previous events"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             onClick={() => scroll('right')}
-            className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all"
+            className="p-1.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-slate-400 hover:text-white hover:bg-white/[0.07] transition-all cursor-pointer"
             aria-label="Next events"
           >
             <ChevronRight className="w-4 h-4" />
@@ -89,8 +99,13 @@ export function EventsCarousel() {
         className="flex items-stretch gap-4 overflow-x-auto no-scrollbar scroll-smooth pb-2 pt-1 -mx-4 px-4 sm:mx-0 sm:px-0"
       >
         {events.map((evt) => {
-          const isSelected = selectedEvent.id === evt.id;
-          const isRegistered = evt.status === 'Registered' || evt.status === 'Confirmed';
+          const isSelected = selectedEvent?.id === evt.id;
+          const isRegistered = Boolean(
+            currentUser &&
+              myRegistrations.some(
+                (r) => r.event?.id === evt.id || (r as any).eventId === evt.id
+              )
+          );
 
           return (
             <motion.div
@@ -125,7 +140,7 @@ export function EventsCarousel() {
                     }`}
                   >
                     <CheckCircle className="w-2.5 h-2.5" />
-                    {evt.status}
+                    {isRegistered ? 'Registered' : 'Available'}
                   </span>
                 </div>
 

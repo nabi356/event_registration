@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit } from 'lucide-react';
+import { Plus, Edit, ShieldAlert } from 'lucide-react';
 import { ManagementHeader } from './ManagementHeader';
 import { Sidebar, NavItemKey } from './Sidebar';
 import { MetricCards } from './MetricCards';
@@ -19,7 +19,62 @@ export function ManagementView() {
   const [activeTab, setActiveTab] = useState<NavItemKey>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const { selectedEvent, setIsEventFormModalOpen, setEventToEdit } = useEventSystem();
+  const {
+    selectedEvent,
+    setIsEventFormModalOpen,
+    setEventToEdit,
+    currentUser,
+    setViewMode,
+  } = useEventSystem();
+
+  // Strict UI-level access guard: management role required
+  if (!currentUser || currentUser.role !== 'management') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
+        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-4 shadow-lg shadow-rose-950/30">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2 tracking-tight">
+          Management Access Restricted
+        </h2>
+        <p className="text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
+          The Campus Operations Suite and Gate Management Terminal are restricted to verified administrator and manager accounts. Students cannot access management functions.
+        </p>
+        <button
+          onClick={() => setViewMode('student')}
+          className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-blue-900/30"
+        >
+          Return to Student Portal
+        </button>
+      </div>
+    );
+  }
+
+  // Handle case when no events exist yet
+  if (!selectedEvent) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
+        <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
+          <Plus className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-white mb-2 tracking-tight">
+          No Events In Database
+        </h2>
+        <p className="text-sm text-slate-400 max-w-md mb-6">
+          Create your first campus event to initialize gate monitoring and pass generation.
+        </p>
+        <button
+          onClick={() => {
+            setEventToEdit(null);
+            setIsEventFormModalOpen(true);
+          }}
+          className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-blue-900/30"
+        >
+          Create First Event
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex gap-6 min-h-[calc(100vh-5rem)]">

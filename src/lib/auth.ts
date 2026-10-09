@@ -35,9 +35,17 @@ export function verifyToken(token: string): TokenPayload | null {
 
 export function getAuthUser(req: NextRequest): TokenPayload | null {
   const authHeader = req.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return verifyToken(authHeader.substring(7));
   }
-  const token = authHeader.substring(7);
-  return verifyToken(token);
+  try {
+    const tokenParam = req.nextUrl?.searchParams?.get('token');
+    if (tokenParam) {
+      return verifyToken(tokenParam);
+    }
+  } catch {
+    // ignore
+  }
+  return null;
 }
+

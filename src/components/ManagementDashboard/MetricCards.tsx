@@ -11,6 +11,7 @@ export function MetricCards() {
     checkedInCount,
     capacityPercentage,
     simulateCheckIn,
+    selectedEvent,
   } = useEventSystem();
 
   return (
@@ -33,9 +34,11 @@ export function MetricCards() {
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-white/[0.05] text-xs">
-          <span className="text-slate-400">Target Hall: 1,300 Cap</span>
+          <span className="text-slate-400 truncate max-w-[160px]">
+            {selectedEvent?.venue || 'Venue'}: {selectedEvent?.capacity || 0} Cap
+          </span>
           <span className="text-blue-400 font-medium flex items-center gap-0.5">
-            +18 today <ArrowUpRight className="w-3 h-3" />
+            {totalRegistered} confirmed <ArrowUpRight className="w-3 h-3" />
           </span>
         </div>
       </div>
@@ -69,7 +72,7 @@ export function MetricCards() {
           <button
             id="btn-simulate-checkin-metric"
             onClick={simulateCheckIn}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold transition-all hover:scale-105 active:scale-95 shadow-sm"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold transition-all hover:scale-105 active:scale-95 shadow-sm cursor-pointer"
             title="Fast manual attendee gate check-in"
           >
             <Plus className="w-3 h-3" />
@@ -96,8 +99,12 @@ export function MetricCards() {
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-white/[0.05] text-xs">
-          <span className="text-slate-400">564 seats remaining</span>
-          <span className="text-violet-400 font-medium">Optimal flow</span>
+          <span className="text-slate-400">
+            {Math.max(0, (selectedEvent?.capacity || totalRegistered) - checkedInCount)} seats remaining
+          </span>
+          <span className="text-violet-400 font-medium">
+            {checkedInCount >= (selectedEvent?.capacity || 1) ? 'Venue Full' : 'Gate Active'}
+          </span>
         </div>
       </div>
     </div>

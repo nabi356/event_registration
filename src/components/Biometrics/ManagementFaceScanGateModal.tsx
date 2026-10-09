@@ -26,7 +26,7 @@ import {
 interface ManagementFaceScanGateModalProps {
   isOpen: boolean;
   events: EventItem[];
-  selectedEvent: EventItem;
+  selectedEvent: EventItem | null;
   onSelectEvent: (event: EventItem) => void;
   onClose: () => void;
   onVerificationLogged: () => void;
@@ -138,7 +138,7 @@ export function ManagementFaceScanGateModal({
 
   // Trigger Biometric Verification Scan
   const handleScanAttendee = async (simulateSpoof = false) => {
-    if (!canvasRef.current || isScanning) return;
+    if (!canvasRef.current || isScanning || !selectedEvent?.id) return;
 
     setIsScanning(true);
     setResult(null);
@@ -153,10 +153,14 @@ export function ManagementFaceScanGateModal({
       };
 
       const embedding = extractFaceEmbeddingFromCanvas(canvas, faceBox);
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : '';
 
       const response = await fetch('/api/checkin/verify-face', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authToken ? `Bearer ${authToken}` : '',
+        },
         body: JSON.stringify({
           eventId: selectedEvent.id,
           faceEmbedding: embedding,
@@ -237,7 +241,7 @@ export function ManagementFaceScanGateModal({
                     className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.1] hover:border-white/[0.2] text-xs font-medium text-slate-200 transition-all"
                   >
                     <Building className="w-3.5 h-3.5 text-blue-400" />
-                    <span className="max-w-[140px] truncate">{selectedEvent.name}</span>
+                    <span className="max-w-[140px] truncate">{selectedEvent?.name || 'Select Event'}</span>
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                   </button>
 
@@ -255,7 +259,7 @@ export function ManagementFaceScanGateModal({
                             setResult(null);
                           }}
                           className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition-colors flex flex-col ${
-                            selectedEvent.id === evt.id
+                            selectedEvent?.id === evt.id
                               ? 'bg-blue-600/20 text-blue-300 font-medium'
                               : 'text-slate-300 hover:bg-white/[0.05]'
                           }`}

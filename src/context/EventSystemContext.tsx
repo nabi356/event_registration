@@ -6,7 +6,6 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useRef,
 } from 'react';
 import {
   ViewMode,
@@ -17,14 +16,11 @@ import {
   SecuritySettings,
   ToastMessage,
   AuthUserData,
+  UserRegistration,
 } from '@/lib/types';
 import {
-  MOCK_EVENTS,
-  INITIAL_CHECKINS,
-  INITIAL_METRICS,
   INITIAL_SECURITY_SETTINGS,
   INITIAL_SECURITY_ACTIVITY,
-  CURRENT_STUDENT,
 } from '@/lib/mockData';
 
 interface EventSystemContextType {
@@ -41,12 +37,16 @@ interface EventSystemContextType {
   updateUserFaceState: (updatedAt: string) => void;
 
   // Selected Active Event & List
-  selectedEvent: EventItem;
+  selectedEvent: EventItem | null;
   setSelectedEvent: (event: EventItem) => void;
   events: EventItem[];
   refreshEvents: () => Promise<void>;
   registerForEvent: (eventId: string) => Promise<boolean>;
   cancelEventRegistration: (eventId: string) => Promise<boolean>;
+
+  // Student Real Registrations
+  myRegistrations: UserRegistration[];
+  refreshMyRegistrations: () => Promise<void>;
 
   // Dynamic QR & Timer
   qrValue: string;
@@ -113,11 +113,14 @@ interface EventSystemContextType {
 const EventSystemContext = createContext<EventSystemContextType | undefined>(undefined);
 
 export function EventSystemProvider({ children }: { children: React.ReactNode }) {
-  const [viewMode, setViewMode] = useState<ViewMode>('student');
+  const [viewMode, setViewModeState] = useState<ViewMode>('student');
 
-  // Auth User state
+  // Auth User state: NULL by default - NO fake defaults!
   const [currentUser, setCurrentUser] = useState<AuthUserData | null>(null);
   const [token, setToken] = useState<string | null>(null);
+
+  // Student's real registrations from MongoDB
+  const [myRegistrations, setMyRegistrations] = useState<UserRegistration[]>([]);
 
   // Modals state
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -128,13 +131,13 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
   const [isEventFormModalOpen, setIsEventFormModalOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<EventItem | null>(null);
 
-  // Events & Selected Event
-  const [events, setEvents] = useState<EventItem[]>(MOCK_EVENTS);
-  const [selectedEvent, setSelectedEvent] = useState<EventItem>(MOCK_EVENTS[0]);
+  // Real Events from MongoDB
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
   // Dynamic QR
   const [qrCountdown, setQrCountdown] = useState<number>(10);
-  const [qrValue, setQrValue] = useState<string>('EVTRA-INITIAL-BOOT-SESSION');
+  const [qrValue, setQrValue] = useState<string>('');
   const [qrRefreshKey, setQrRefreshKey] = useState<number>(0);
 
   // Geo-Fence & Device verification
@@ -148,10 +151,10 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
     setIsTicketFlipped((prev) => !prev);
   }, []);
 
-  // Metrics & Feed
-  const [totalRegistered, setTotalRegistered] = useState<number>(INITIAL_METRICS.totalRegistered);
-  const [checkedInCount, setCheckedInCount] = useState<number>(INITIAL_METRICS.checkedIn);
-  const [checkIns, setCheckIns] = useState<CheckInRecord[]>(INITIAL_CHECKINS);
+  // Metrics & Feed - 0 by default, updated from DB
+  const [totalRegistered, setTotalRegistered] = useState<number>(0);
+  const [checkedInCount, setCheckedInCount] = useState<number>(0);
+  const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>(
     INITIAL_SECURITY_SETTINGS
   );
@@ -176,35 +179,43 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Initialize or fetch current user on mount
+  // Strict Role-Based View Switching
+  const setViewMode = useCallback(
+    (mode: ViewMode) => {
+      if (mode === 'management') {
+        if (!currentUser || currentUser.role !== 'management') {
+          addToast(
+            'error',
+            'Access Denied',
+            'Management portal is restricted to verified administrators.'
+          );
+          return;
+        }
+      }
+      setViewModeState(mode);
+    },
+    [currentUser, addToast]
+  );
+
+  // Initialize stored auth on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedToken = localStorage.getItem('eventra_token');
       const storedUser = localStorage.getItem('eventra_user');
       if (storedToken && storedUser) {
         try {
-          const parsed = JSON.parse(storedUser);
+          const parsed: AuthUserData = JSON.parse(storedUser);
           setToken(storedToken);
           setCurrentUser(parsed);
+          if (parsed.role !== 'management' && viewMode === 'management') {
+            setViewModeState('student');
+          }
         } catch {
-          // ignore parsing error
+          // ignore corrupted local storage
         }
-      } else {
-        // Fallback default student profile for instant UX
-        setCurrentUser({
-          id: 'user-default-nabidul',
-          name: CURRENT_STUDENT.name,
-          enrollmentNo: CURRENT_STUDENT.studentId,
-          university: 'Apex Institute of Technology',
-          email: CURRENT_STUDENT.email,
-          role: 'student',
-          department: CURRENT_STUDENT.department,
-          enrolledYear: CURRENT_STUDENT.enrolledYear,
-          hasFaceEnrolled: true,
-        });
       }
     }
-  }, []);
+  }, [viewMode]);
 
   // Browser Geolocation Detection
   useEffect(() => {
@@ -217,14 +228,14 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
           });
         },
         () => {
-          // Geolocation denied or unavailable
+          // Geolocation unavailable
         },
         { timeout: 5000 }
       );
     }
   }, []);
 
-  // Fetch real events from API
+  // Fetch real events from MongoDB API
   const refreshEvents = useCallback(async () => {
     try {
       const res = await fetch('/api/events');
@@ -234,11 +245,14 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
 
         // Keep current selected event updated or select first
         setSelectedEvent((prev) => {
-          const match = data.events.find((e: EventItem) => e.id === prev.id);
-          return match || data.events[0];
+          if (prev) {
+            const match = data.events.find((e: EventItem) => e.id === prev.id);
+            if (match) return match;
+          }
+          return data.events[0];
         });
 
-        // Update overall registered and checked-in counts
+        // Compute real total registered & checked-in across all events
         const totalReg = data.events.reduce(
           (sum: number, e: EventItem) => sum + (e.registeredCount || 0),
           0
@@ -247,30 +261,54 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
           (sum: number, e: EventItem) => sum + (e.checkedInCount || 0),
           0
         );
-        if (totalReg > 0) setTotalRegistered(totalReg);
-        if (totalChk > 0) setCheckedInCount(totalChk);
-      } else {
-        // Auto-seed if database is empty
-        fetch('/api/seed', { method: 'POST' }).then(() => {
-          fetch('/api/events')
-            .then((r) => r.json())
-            .then((d) => {
-              if (d.success && d.events?.length > 0) {
-                setEvents(d.events);
-                setSelectedEvent(d.events[0]);
-              }
-            });
-        });
+        setTotalRegistered(totalReg);
+        setCheckedInCount(totalChk);
       }
     } catch {
-      // Keep mock events as graceful fallback
+      // ignore
     }
   }, []);
 
-  // Fetch live check-in feed
-  const refreshCheckIns = useCallback(async () => {
+  // Fetch student's real registrations from MongoDB
+  const refreshMyRegistrations = useCallback(async () => {
+    const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
+    if (!activeToken || !currentUser || currentUser.role !== 'student') {
+      setMyRegistrations([]);
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/checkin/feed?eventId=${selectedEvent.id}`);
+      const res = await fetch('/api/registrations/my', {
+        headers: {
+          Authorization: `Bearer ${activeToken}`,
+        },
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.registrations)) {
+        setMyRegistrations(data.registrations);
+      } else {
+        setMyRegistrations([]);
+      }
+    } catch {
+      setMyRegistrations([]);
+    }
+  }, [token, currentUser]);
+
+  // Fetch live check-in feed (MANAGEMENT ONLY)
+  const refreshCheckIns = useCallback(async () => {
+    if (!selectedEvent?.id) return;
+    const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
+    if (!activeToken || !currentUser || currentUser.role !== 'management') {
+      setCheckIns([]);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/checkin/feed?eventId=${selectedEvent.id}`, {
+        headers: {
+          Authorization: `Bearer ${activeToken}`,
+        },
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.checkIns)) {
         setCheckIns(data.checkIns);
@@ -278,12 +316,23 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
     } catch {
       // ignore
     }
-  }, [selectedEvent.id]);
+  }, [selectedEvent?.id, token, currentUser]);
 
-  // Fetch security telemetry
+  // Fetch security telemetry (MANAGEMENT ONLY)
   const refreshSecurityTelemetry = useCallback(async () => {
+    if (!selectedEvent?.id) return;
+    const activeToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
+    if (!activeToken || !currentUser || currentUser.role !== 'management') {
+      setSecurityActivity(INITIAL_SECURITY_ACTIVITY);
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/security/alerts?eventId=${selectedEvent.id}`);
+      const res = await fetch(`/api/security/alerts?eventId=${selectedEvent.id}`, {
+        headers: {
+          Authorization: `Bearer ${activeToken}`,
+        },
+      });
       const data = await res.json();
       if (data.success && data.activity) {
         setSecurityActivity(data.activity);
@@ -294,18 +343,28 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
     } catch {
       // ignore
     }
-  }, [selectedEvent.id]);
+  }, [selectedEvent?.id, token, currentUser]);
 
-  // Initial data load
+  // Sync data on load and when dependencies change
   useEffect(() => {
     refreshEvents();
-    refreshCheckIns();
-    refreshSecurityTelemetry();
-  }, [refreshEvents, refreshCheckIns, refreshSecurityTelemetry]);
+  }, [refreshEvents]);
 
-  // 10-Second Dynamic Pass Token Rotation from Server
+  useEffect(() => {
+    if (currentUser?.role === 'student') {
+      refreshMyRegistrations();
+    } else if (currentUser?.role === 'management') {
+      refreshCheckIns();
+      refreshSecurityTelemetry();
+    }
+  }, [currentUser, refreshMyRegistrations, refreshCheckIns, refreshSecurityTelemetry]);
+
+  // Dynamic Pass Token (STUDENT ONLY for registered event)
   const fetchPassToken = useCallback(async () => {
-    if (!currentUser || !selectedEvent) return;
+    if (!currentUser || currentUser.role !== 'student' || !selectedEvent?.id) {
+      setQrValue('');
+      return;
+    }
 
     let deviceId = typeof window !== 'undefined' ? localStorage.getItem('eventra_device_id') : null;
     if (!deviceId) {
@@ -341,35 +400,42 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
         if (data.geoStatus) {
           setGeoFenceStatus(data.geoStatus);
         }
+      } else {
+        setQrValue('');
       }
     } catch {
-      // Fallback local rotating token
-      const newTimestamp = Math.floor(Date.now() / 1000);
-      const randomHex = Math.random().toString(36).substring(2, 7).toUpperCase();
-      setQrValue(`EVTRA-${selectedEvent.id}-${newTimestamp}-${randomHex}`);
+      setQrValue('');
     }
     setQrRefreshKey((k) => k + 1);
-  }, [currentUser, selectedEvent, token, userCoords]);
+  }, [currentUser, selectedEvent?.id, token, userCoords]);
 
   // Pass rotation 1s interval timer
   useEffect(() => {
-    fetchPassToken();
+    if (currentUser?.role === 'student' && selectedEvent?.id) {
+      fetchPassToken();
 
-    const timer = setInterval(() => {
-      setQrCountdown((prev) => {
-        if (prev <= 1) {
-          fetchPassToken();
-          return 10;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+      const timer = setInterval(() => {
+        setQrCountdown((prev) => {
+          if (prev <= 1) {
+            fetchPassToken();
+            return 10;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-    return () => clearInterval(timer);
-  }, [fetchPassToken]);
+      return () => clearInterval(timer);
+    }
+  }, [currentUser?.role, selectedEvent?.id, fetchPassToken]);
 
-  // Register for event
+  // Register for event (Student Action)
   const registerForEvent = async (eventId: string): Promise<boolean> => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      addToast('info', 'Sign In Required', 'Please sign in or register to book an event pass.');
+      return false;
+    }
+
     try {
       const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
       const res = await fetch('/api/registrations', {
@@ -389,6 +455,8 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
 
       addToast('success', 'Registration Confirmed', 'Digital pass generated for event!');
       await refreshEvents();
+      await refreshMyRegistrations();
+      await fetchPassToken();
       return true;
     } catch (err: any) {
       addToast('error', 'Registration Failed', err.message);
@@ -396,7 +464,7 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
     }
   };
 
-  // Cancel registration
+  // Cancel registration (Student Action)
   const cancelEventRegistration = async (eventId: string): Promise<boolean> => {
     try {
       const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
@@ -417,6 +485,8 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
 
       addToast('info', 'Registration Cancelled', 'Pass deactivated.');
       await refreshEvents();
+      await refreshMyRegistrations();
+      setQrValue('');
       return true;
     } catch (err: any) {
       addToast('error', 'Cancellation Error', err.message);
@@ -434,10 +504,14 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
     }
     addToast('success', 'Authenticated', `Welcome back, ${userData.name}!`);
 
-    // First time face enrollment prompt if student and not enrolled
-    if (userData.role === 'student' && !userData.hasFaceEnrolled) {
-      setFaceEnrollUpdateMode(false);
-      setIsFaceEnrollModalOpen(true);
+    if (userData.role === 'management') {
+      setViewModeState('management');
+    } else {
+      setViewModeState('student');
+      if (!userData.hasFaceEnrolled) {
+        setFaceEnrollUpdateMode(false);
+        setIsFaceEnrollModalOpen(true);
+      }
     }
   };
 
@@ -445,6 +519,10 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
   const logoutUser = () => {
     setCurrentUser(null);
     setToken(null);
+    setMyRegistrations([]);
+    setCheckIns([]);
+    setQrValue('');
+    setViewModeState('student');
     if (typeof window !== 'undefined') {
       localStorage.removeItem('eventra_token');
       localStorage.removeItem('eventra_user');
@@ -498,12 +576,22 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
     );
   };
 
-  // Express manual check-in
+  // Express manual check-in (MANAGEMENT ONLY)
   const simulateCheckIn = async () => {
+    if (!currentUser || currentUser.role !== 'management') {
+      addToast('error', 'Access Denied', 'Operator check-in requires management privileges.');
+      return;
+    }
+    if (!selectedEvent?.id) return;
+
     try {
+      const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
       const res = await fetch('/api/checkin/rapid', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authToken ? `Bearer ${authToken}` : '',
+        },
         body: JSON.stringify({
           eventId: selectedEvent.id,
           identifier: 'UNI-2026-8472',
@@ -517,33 +605,48 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
         addToast('error', 'Check-in Blocked', data.reason || 'Verification failed');
       }
       await refreshCheckIns();
-    } catch {
-      setCheckedInCount((c) => c + 1);
-      addToast('success', 'Check-in Verified', 'Entry approved');
+      await refreshEvents();
+    } catch (err: any) {
+      addToast('error', 'Check-in Failed', err.message);
     }
   };
 
-  // Failed check-in / flag exception
+  // Failed check-in / flag exception (MANAGEMENT ONLY)
   const simulateFailedCheckIn = async () => {
+    if (!currentUser || currentUser.role !== 'management') {
+      addToast('error', 'Access Denied', 'Security flags require management privileges.');
+      return;
+    }
+    if (!selectedEvent?.id) return;
+
     try {
+      const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
       await fetch('/api/checkin/flag-exception', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authToken ? `Bearer ${authToken}` : '',
+        },
         body: JSON.stringify({
           eventId: selectedEvent.id,
-          reason: 'Perimeter anomaly flagged by terminal',
+          reason: 'Perimeter anomaly flagged by terminal operator',
         }),
       });
       addToast('error', 'Security Exception Logged', 'Anomaly logged to database stream');
       await refreshCheckIns();
       await refreshSecurityTelemetry();
-    } catch {
-      addToast('error', 'Security Exception', 'Exception logged');
+    } catch (err: any) {
+      addToast('error', 'Security Exception Error', err.message);
     }
   };
 
-  // Reset baseline
+  // Reset baseline (MANAGEMENT ONLY)
   const resetDemoStats = async () => {
+    if (!currentUser || currentUser.role !== 'management') {
+      addToast('error', 'Access Denied', 'Calibrating database requires management privileges.');
+      return;
+    }
+
     try {
       await fetch('/api/seed', { method: 'POST' });
       await refreshEvents();
@@ -551,18 +654,23 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
       await refreshSecurityTelemetry();
       addToast('info', 'Database Calibrated', 'Operational baseline restored to clean seed state.');
     } catch {
-      setCheckedInCount(INITIAL_METRICS.checkedIn);
-      setCheckIns(INITIAL_CHECKINS);
-      setGeoFenceStatus('verified');
-      setDeviceLockStatus('verified');
-      setIsTicketFlipped(false);
-      addToast('info', 'Terminal Calibrated', 'Operational parameters restored.');
+      addToast('error', 'Calibration Error', 'Failed to recalibrate database.');
     }
   };
 
-  // Export CSV
+  // Export CSV (MANAGEMENT ONLY)
   const exportAttendeesCsv = () => {
-    window.open(`/api/reports/export-csv?eventId=${selectedEvent.id}`, '_blank');
+    if (!currentUser || currentUser.role !== 'management') {
+      addToast('error', 'Access Denied', 'Exporting attendee roster requires management privileges.');
+      return;
+    }
+    if (!selectedEvent?.id) return;
+
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : '');
+    window.open(
+      `/api/reports/export-csv?eventId=${selectedEvent.id}&token=${encodeURIComponent(authToken || '')}`,
+      '_blank'
+    );
     addToast('success', 'Exporting CSV', 'Downloading verified attendee roster...');
   };
 
@@ -583,6 +691,8 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
         refreshEvents,
         registerForEvent,
         cancelEventRegistration,
+        myRegistrations,
+        refreshMyRegistrations,
         qrValue,
         qrCountdown,
         qrRefreshKey,

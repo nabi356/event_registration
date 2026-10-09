@@ -8,12 +8,18 @@ export function AttendeesTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [attendees, setAttendees] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { selectedEvent, exportAttendeesCsv } = useEventSystem();
+  const { selectedEvent, exportAttendeesCsv, token } = useEventSystem();
 
   const fetchAttendees = async () => {
+    if (!selectedEvent?.id) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/registrations/attendees?eventId=${selectedEvent.id}`);
+      const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : '');
+      const res = await fetch(`/api/registrations/attendees?eventId=${selectedEvent.id}`, {
+        headers: {
+          Authorization: authToken ? `Bearer ${authToken}` : '',
+        },
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.attendees)) {
         setAttendees(data.attendees);
@@ -27,7 +33,7 @@ export function AttendeesTab() {
 
   useEffect(() => {
     fetchAttendees();
-  }, [selectedEvent.id]);
+  }, [selectedEvent?.id]);
 
   const filtered = attendees.filter(
     (a) =>
@@ -48,7 +54,7 @@ export function AttendeesTab() {
             </span>
           </div>
           <p className="text-xs text-slate-400">
-            {selectedEvent.name} · Real-time pass roster and check-in statuses
+            {selectedEvent?.name || 'Selected Event'} · Real-time pass roster and check-in statuses
           </p>
         </div>
 

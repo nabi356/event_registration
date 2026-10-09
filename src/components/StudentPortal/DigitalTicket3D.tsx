@@ -9,17 +9,16 @@ import {
   ShieldCheck,
   MapPin,
   Clock,
-  Sparkles,
   Smartphone,
   AlertTriangle,
   Lock,
   CheckCircle2,
   Calendar,
-  Layers,
   ArrowRight,
+  UserPlus,
+  LogIn,
 } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
-import { CURRENT_STUDENT } from '@/lib/mockData';
 
 export function DigitalTicket3D() {
   const {
@@ -32,9 +31,32 @@ export function DigitalTicket3D() {
     geoFenceStatus,
     deviceLockStatus,
     currentUser,
+    myRegistrations,
+    registerForEvent,
+    setIsAuthModalOpen,
+    addToast,
   } = useEventSystem();
 
-  // Determine if QR is blocked due to demo states
+  // If no event loaded yet from DB
+  if (!selectedEvent) {
+    return (
+      <div className="w-full max-w-md mx-auto py-12 text-center rounded-3xl glass-panel border border-white/[0.08] p-8">
+        <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mx-auto mb-3">
+          <Calendar className="w-6 h-6" />
+        </div>
+        <h3 className="text-base font-bold text-white mb-1">No Active Event Selected</h3>
+        <p className="text-xs text-slate-400">Select an event from the roster to inspect pass credentials.</p>
+      </div>
+    );
+  }
+
+  // Check if current user has a real registration for THIS event
+  const userRegistration = myRegistrations.find(
+    (r) => r.event?.id === selectedEvent.id || (r as any).eventId === selectedEvent.id
+  );
+  const isRegistered = Boolean(userRegistration);
+
+  // Determine if QR is blocked due to geofence or device lock
   const isGeoBlocked = geoFenceStatus !== 'verified';
   const isDeviceBlocked = deviceLockStatus === 'mismatch';
   const isPassBlocked = isGeoBlocked || isDeviceBlocked;
@@ -43,6 +65,19 @@ export function DigitalTicket3D() {
   const radius = 18;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (qrCountdown / 10) * circumference;
+
+  const handleShowQrClick = () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      addToast('info', 'Sign In Required', 'Please sign in to access your digital entry pass.');
+      return;
+    }
+    if (!isRegistered) {
+      addToast('warning', 'Registration Required', 'Please register for this event before accessing your gate pass token.');
+      return;
+    }
+    flipTicket();
+  };
 
   return (
     <div className="w-full max-w-md mx-auto perspective-1200 py-2">
@@ -87,10 +122,17 @@ export function DigitalTicket3D() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Registration Confirmed
-              </div>
+              {isRegistered ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Registration Confirmed
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-300 text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  Not Registered
+                </div>
+              )}
             </div>
 
             {/* Event Name & Category */}
@@ -129,13 +171,13 @@ export function DigitalTicket3D() {
                   Attendee Name
                 </span>
                 <span className="text-sm font-semibold text-white mt-0.5 block truncate">
-                  {currentUser?.name || CURRENT_STUDENT.name}
+                  {currentUser ? currentUser.name : 'Guest Attendee'}
                 </span>
-                <span className="text-[11px] text-slate-400">
-                  {currentUser?.enrollmentNo || CURRENT_STUDENT.studentId}
+                <span className="text-[11px] text-slate-400 font-mono">
+                  {currentUser ? currentUser.enrollmentNo : 'Sign-in required'}
                 </span>
-                <span className="text-[10px] text-slate-500 block">
-                  {currentUser?.university || 'Apex Institute of Technology'}
+                <span className="text-[10px] text-slate-500 block truncate">
+                  {currentUser?.university || 'University Campus'}
                 </span>
               </div>
 
@@ -144,10 +186,10 @@ export function DigitalTicket3D() {
                   Ticket Reference
                 </span>
                 <span className="text-sm font-mono font-semibold text-blue-300 mt-0.5 block truncate">
-                  {selectedEvent.ticketId}
+                  {isRegistered ? userRegistration?.ticketId : 'NO PASS ISSUED'}
                 </span>
                 <span className="text-[11px] text-slate-400">
-                  {selectedEvent.seatTier || 'Standard Admission'}
+                  {isRegistered ? userRegistration?.seatTier || 'Standard Admission' : 'Unconfirmed Seat'}
                 </span>
               </div>
 
@@ -165,32 +207,61 @@ export function DigitalTicket3D() {
                 <span className="text-[10px] uppercase font-medium tracking-wider text-slate-400 block">
                   Entry Status
                 </span>
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 mt-0.5">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Ready for Check-in</span>
+                <div className="flex items-center gap-1.5 text-xs font-semibold mt-0.5">
+                  {isRegistered ? (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400">Ready for Check-in</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="text-amber-300">Registration Required</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Bottom Action Area: Show QR Button */}
+          {/* Bottom Action Area: Show QR Button or Register Prompt */}
           <div className="pt-6 mt-4">
-            <button
-              id="btn-show-qr"
-              onClick={flipTicket}
-              className="w-full relative group overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 p-[1px] shadow-lg shadow-blue-900/40 hover:shadow-blue-800/60 transition-all duration-300"
-            >
-              <div className="w-full bg-[#0D1424]/80 backdrop-blur-md rounded-2xl py-3.5 px-5 flex items-center justify-center gap-2 group-hover:bg-transparent transition-colors duration-300">
-                <QrCode className="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" />
-                <span className="text-sm font-semibold text-white tracking-wide">
-                  Show Secure QR
-                </span>
-                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
-              </div>
-            </button>
+            {!currentUser ? (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-3.5 px-5 flex items-center justify-center gap-2 text-sm font-semibold text-white shadow-lg shadow-blue-900/40 transition-all cursor-pointer"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In to Access Pass</span>
+              </button>
+            ) : !isRegistered ? (
+              <button
+                onClick={() => registerForEvent(selectedEvent.id)}
+                className="w-full rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 py-3.5 px-5 flex items-center justify-center gap-2 text-sm font-semibold text-white shadow-lg shadow-emerald-950/40 transition-all cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Register for Event (Generate Pass)</span>
+              </button>
+            ) : (
+              <button
+                id="btn-show-qr"
+                onClick={handleShowQrClick}
+                className="w-full relative group overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 p-[1px] shadow-lg shadow-blue-900/40 hover:shadow-blue-800/60 transition-all duration-300 cursor-pointer"
+              >
+                <div className="w-full bg-[#0D1424]/80 backdrop-blur-md rounded-2xl py-3.5 px-5 flex items-center justify-center gap-2 group-hover:bg-transparent transition-colors duration-300">
+                  <QrCode className="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" />
+                  <span className="text-sm font-semibold text-white tracking-wide">
+                    Show Secure QR
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                </div>
+              </button>
+            )}
 
             <p className="text-[11px] text-center text-slate-400 mt-2.5">
-              Tap to display cryptographic entry code with dynamic refresh
+              {isRegistered
+                ? 'Tap to display cryptographic entry code with dynamic refresh'
+                : 'Zero-trust verified entry requires confirmed event registration'}
             </p>
           </div>
         </div>
@@ -216,7 +287,7 @@ export function DigitalTicket3D() {
                 <h3 className="text-sm font-bold text-white tracking-tight leading-none">
                   Secure Entry Pass
                 </h3>
-                <span className="text-[10px] font-mono text-slate-400 mt-0.5 block">
+                <span className="text-[10px] font-mono text-slate-400 mt-0.5 block truncate max-w-[150px]">
                   {selectedEvent.name}
                 </span>
               </div>
@@ -268,7 +339,7 @@ export function DigitalTicket3D() {
                 className={isPassBlocked ? 'filter blur-md opacity-30 select-none' : ''}
               >
                 <QRCodeSVG
-                  value={qrValue}
+                  value={qrValue || `EVTRA-${selectedEvent.id}-TOKEN`}
                   size={190}
                   level="H"
                   includeMargin={false}
@@ -321,7 +392,7 @@ export function DigitalTicket3D() {
             {/* Cryptographic Hash Metadata */}
             <div className="mt-3 text-center">
               <span className="font-mono text-[10px] text-slate-400 tracking-wider">
-                HASH: {qrValue.substring(qrValue.length - 14)}
+                PASS: {userRegistration?.ticketId || 'EVTRA-TOKEN'}
               </span>
             </div>
           </div>
@@ -348,7 +419,7 @@ export function DigitalTicket3D() {
               </div>
               <span className="text-[11px] font-mono">
                 {geoFenceStatus === 'verified'
-                  ? '32m from venue'
+                  ? 'Perimeter verified'
                   : geoFenceStatus === 'outside'
                   ? '> 50m required'
                   : 'GPS offline'}
@@ -384,7 +455,7 @@ export function DigitalTicket3D() {
             <button
               id="btn-hide-qr"
               onClick={flipTicket}
-              className="w-full py-3 px-4 rounded-xl bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.1] text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 rounded-xl bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.1] text-xs font-semibold text-slate-200 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Hide QR · Flip to Pass</span>

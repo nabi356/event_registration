@@ -18,7 +18,7 @@ export function EventCapacity() {
             Venue Capacity
           </h3>
           <p className="text-[11px] text-slate-400">
-            {selectedEvent.venue} · Real-time occupancy
+            {selectedEvent?.venue || 'Campus Venue'} · Real-time occupancy
           </p>
         </div>
 
@@ -54,18 +54,24 @@ export function EventCapacity() {
         {/* Sectional Breakdown indicators */}
         <div className="grid grid-cols-3 gap-2 pt-3 text-[11px]">
           <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-            <span className="text-slate-400 block text-[10px]">Tier 1 Reserved</span>
-            <span className="font-semibold text-slate-200">92% full</span>
+            <span className="text-slate-400 block text-[10px]">Venue Max Cap</span>
+            <span className="font-semibold text-slate-200">
+              {selectedEvent?.capacity || 0} Seats
+            </span>
           </div>
 
           <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-            <span className="text-slate-400 block text-[10px]">General Hall</span>
-            <span className="font-semibold text-slate-200">51% full</span>
+            <span className="text-slate-400 block text-[10px]">Total Booked</span>
+            <span className="font-semibold text-slate-200">
+              {totalRegistered} Passes
+            </span>
           </div>
 
           <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-            <span className="text-slate-400 block text-[10px]">Staff & VIP</span>
-            <span className="font-semibold text-slate-200">18 / 25</span>
+            <span className="text-slate-400 block text-[10px]">Gate Verified</span>
+            <span className="font-semibold text-emerald-400">
+              {checkedInCount} Present
+            </span>
           </div>
         </div>
       </div>

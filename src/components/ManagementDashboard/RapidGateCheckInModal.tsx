@@ -16,7 +16,7 @@ import { EventItem } from '@/lib/types';
 
 interface RapidGateCheckInModalProps {
   isOpen: boolean;
-  selectedEvent: EventItem;
+  selectedEvent: EventItem | null;
   onClose: () => void;
   onCheckInLogged: () => void;
 }
@@ -39,15 +39,19 @@ export function RapidGateCheckInModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identifier && !qrToken) return;
+    if ((!identifier && !qrToken) || !selectedEvent?.id) return;
 
     setIsSubmitting(true);
     setResult(null);
 
     try {
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : '';
       const res = await fetch('/api/checkin/rapid', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authToken ? `Bearer ${authToken}` : '',
+        },
         body: JSON.stringify({
           eventId: selectedEvent.id,
           identifier: mode === 'id' ? identifier.trim() : undefined,
@@ -98,7 +102,7 @@ export function RapidGateCheckInModal({
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-white">Rapid Gate Check-in</h3>
-                  <p className="text-[11px] text-slate-400">{selectedEvent.name}</p>
+                  <p className="text-[11px] text-slate-400">{selectedEvent?.name || 'No Event Selected'}</p>
                 </div>
               </div>
 

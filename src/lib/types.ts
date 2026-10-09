@@ -65,3 +65,25 @@ export interface AuthUserData {
   faceUpdatedAt?: string | Date;
   deviceId?: string;
 }
+
+export interface UserRegistration {
+  registrationId: string;
+  ticketId: string;
+  status: string;
+  seatTier: string;
+  event: {
+    id: string;
+    name: string;
+    category?: string;
+    startTime: string | Date;
+    endTime: string | Date;
+    date: string;
+    time: string;
+    venue: string;
+    lat: number;
+    lng: number;
+    radiusMeters: number;
+    accentColor: string;
+  };
+}
+

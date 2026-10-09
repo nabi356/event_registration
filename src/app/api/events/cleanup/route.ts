@@ -3,9 +3,18 @@ import { connectToDatabase } from '@/lib/db';
 import { Event } from '@/models/Event';
 import { CheckIn } from '@/models/CheckIn';
 import { SecurityAlert } from '@/models/SecurityAlert';
+import { getAuthUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    const authUser = getAuthUser(req);
+    if (!authUser || authUser.role !== 'management') {
+      return NextResponse.json(
+        { success: false, error: 'Access restricted: Management role required.' },
+        { status: 403 }
+      );
+    }
+
     await connectToDatabase();
     const now = new Date();
 

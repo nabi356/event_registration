@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { CheckIn } from '@/models/CheckIn';
 import { Registration } from '@/models/Registration';
+import { getAuthUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
+    const authUser = getAuthUser(req);
+    if (!authUser || authUser.role !== 'management') {
+      return NextResponse.json(
+        { success: false, error: 'Access restricted: Management role required.' },
+        { status: 403 }
+      );
+    }
+
     await connectToDatabase();
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get('eventId');
