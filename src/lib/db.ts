@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/eventra';
+const ATLAS_URI = 'mongodb+srv://dancernabi_db_user:Nabi2005@cluster0.blsmvvs.mongodb.net/eventra?retryWrites=true&w=majority&appName=Cluster0';
+const rawUri = process.env.MONGODB_URI?.trim();
+const MONGODB_URI =
+  rawUri && !rawUri.includes('localhost:27017') && !rawUri.includes('127.0.0.1:27017')
+    ? rawUri
+    : ATLAS_URI;
 
 interface MongooseCache {
   conn: typeof mongoose | null;
