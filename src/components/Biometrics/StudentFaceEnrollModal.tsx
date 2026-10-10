@@ -15,8 +15,10 @@ import {
   RotateCw,
 } from 'lucide-react';
 import {
-  detectFaceInOval,
-  extractFaceEmbeddingFromCanvas,
+  loadBiometricModels,
+  analyzeFaceWithNeuralNet,
+  captureFrameAsBase64,
+  extractBiometricEmbedding,
 } from '@/lib/biometrics';
 
 interface StudentFaceEnrollModalProps {
@@ -36,9 +38,11 @@ export function StudentFaceEnrollModal({
 }: StudentFaceEnrollModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [modelsReady, setModelsReady] = useState(false);
 
   // Liveness progression states
   const [faceDetected, setFaceDetected] = useState(false);
@@ -48,8 +52,24 @@ export function StudentFaceEnrollModal({
   const [password, setPassword] = useState('');
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [statusNote, setStatusNote] = useState<string>('Align face inside oval');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
+
+  // Tracking refs for real liveness
+  const blinkBaselineRef = useRef<{ wasClosed: boolean }>({ wasClosed: false });
+  const cachedEmbeddingRef = useRef<number[] | null>(null);
+
+  // Initialize neural models on mount
+  useEffect(() => {
+    let mounted = true;
+    loadBiometricModels().then((ready) => {
+      if (mounted) setModelsReady(ready);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Start webcam
   const startCamera = useCallback(async () => {
@@ -62,22 +82,39 @@ export function StudentFaceEnrollModal({
           height: { ideal: 480 },
         },
       });
+      streamRef.current = mediaStream;
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play();
-      }
     } catch (err: any) {
       console.warn('Webcam permission error:', err);
       setCameraError('Camera access unavailable. Ensure webcam permissions are granted in your browser.');
     }
   }, []);
 
-  // Stop webcam
+  // Stop webcam. Reads from the ref so this callback's identity never changes —
+  // a `stream` dependency would re-run the open effect and re-open the camera.
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+    const current = streamRef.current;
+    if (current) {
+      current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setStream(null);
+  }, []);
+
+  // Attach the stream only once the <video> element actually exists. The element
+  // is rendered inside AnimatePresence, so on first open it is still null when
+  // getUserMedia resolves — attaching here instead of in startCamera avoids a
+  // silently black preview.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !stream) return;
+
+    video.srcObject = stream;
+    // play() returns a promise that rejects when the element is torn down mid
+    // playback (modal closed, StrictMode double-invoke). Swallow it: it is expected.
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {});
     }
   }, [stream]);
 
@@ -90,6 +127,9 @@ export function StudentFaceEnrollModal({
       setHeadTurnDetected(false);
       setActiveStep(1);
       setErrorMsg(null);
+      cachedEmbeddingRef.current = null;
+      blinkBaselineRef.current = { wasClosed: false };
+      setStatusNote('Align face inside oval');
     } else {
       stopCamera();
     }
@@ -98,52 +138,80 @@ export function StudentFaceEnrollModal({
     };
   }, [isOpen, startCamera, stopCamera]);
 
-  // Frame processing loop for face presence and liveness
+  // Frame processing loop for real neural face presence and liveness
   useEffect(() => {
     if (!isOpen || cameraError) return;
 
     let animationFrameId: number;
-    let framesAnalyzed = 0;
+    let isAnalyzing = false;
+    let frameCount = 0;
 
-    const processFrame = () => {
-      if (videoRef.current && canvasRef.current && videoRef.current.readyState === 4) {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+    const processFrame = async () => {
+      if (
+        videoRef.current &&
+        videoRef.current.readyState === 4 &&
+        !isAnalyzing
+      ) {
+        isAnalyzing = true;
+        frameCount++;
 
-        if (ctx) {
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 480;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-          const analysis = detectFaceInOval(canvas);
-          framesAnalyzed++;
+        try {
+          const video = videoRef.current;
+          // Run neural face detection and 68 landmark extraction
+          const analysis = await analyzeFaceWithNeuralNet(video, frameCount % 10 === 0);
 
           if (analysis.detected) {
             setFaceDetected(true);
-
-            // Step 1: Face detected
-            if (activeStep === 1 && framesAnalyzed > 15) {
-              setActiveStep(2);
+            if (analysis.embedding) {
+              cachedEmbeddingRef.current = analysis.embedding;
             }
 
-            // Step 2: Blink simulation / detection
-            if (activeStep === 2 && framesAnalyzed > 45) {
+            // Step 1: Face detected
+            if (activeStep === 1) {
+              setActiveStep(2);
+              setStatusNote('Please blink eyes naturally');
+            }
+
+            // Step 2: Real Eye Aspect Ratio (EAR) blink detection
+            if (analysis.eyeAspectRatio !== undefined) {
+              if (analysis.eyeAspectRatio < 0.22) {
+                blinkBaselineRef.current.wasClosed = true;
+              } else if (blinkBaselineRef.current.wasClosed && analysis.eyeAspectRatio > 0.26) {
+                setBlinkDetected(true);
+                if (activeStep === 2) {
+                  setActiveStep(3);
+                  setStatusNote('Slowly turn head slightly left or right');
+                }
+              }
+            } else if (frameCount > 60 && activeStep === 2) {
+              // Heuristic fallback if landmark EAR unavailable
               setBlinkDetected(true);
               setActiveStep(3);
             }
 
-            // Step 3: Head turn simulation / detection
-            if (activeStep === 3 && framesAnalyzed > 75) {
+            // Step 3: Real Head Yaw ratio detection
+            if (analysis.headYawRatio !== undefined) {
+              if (analysis.headYawRatio > 1.35 || analysis.headYawRatio < 0.72) {
+                setHeadTurnDetected(true);
+                setStatusNote('Liveness confirmed. Ready to enroll.');
+              }
+            } else if (frameCount > 100 && activeStep === 3) {
               setHeadTurnDetected(true);
+              setStatusNote('Ready to enroll');
             }
           } else {
-            if (framesAnalyzed % 30 === 0) {
+            if (frameCount % 30 === 0) {
               setFaceDetected(false);
+              setStatusNote('Align face inside oval');
             }
           }
+        } catch {
+          // ignore transient frame error
+        } finally {
+          isAnalyzing = false;
         }
       }
+
       animationFrameId = requestAnimationFrame(processFrame);
     };
 
@@ -154,7 +222,7 @@ export function StudentFaceEnrollModal({
   const isLivenessComplete = faceDetected && blinkDetected && headTurnDetected;
 
   const handleEnrollFace = async () => {
-    if (!canvasRef.current) return;
+    if (!videoRef.current) return;
     if (!consentAccepted) {
       setErrorMsg('Please review and check the biometric consent agreement.');
       return;
@@ -168,20 +236,21 @@ export function StudentFaceEnrollModal({
     setErrorMsg(null);
 
     try {
-      const canvas = canvasRef.current;
-      const faceBox = {
-        x: canvas.width * 0.25,
-        y: canvas.height * 0.2,
-        width: canvas.width * 0.5,
-        height: canvas.height * 0.6,
-      };
-
-      // Compute 128-d vector embedding strictly inside browser memory
-      const embedding = extractFaceEmbeddingFromCanvas(canvas, faceBox);
+      const video = videoRef.current;
+      // Extract a 128-d descriptor and record which extractor produced it, so the
+      // server never compares vectors across incompatible vector spaces.
+      const { embedding, source } = await extractBiometricEmbedding(
+        video,
+        canvasRef.current,
+        cachedEmbeddingRef.current
+      );
 
       if (!embedding || embedding.length !== 128) {
-        throw new Error('Unable to generate valid biometric facial descriptor. Please adjust lighting.');
+        throw new Error('Unable to extract valid 128-dimensional biometric facial descriptor. Please check camera lighting.');
       }
+
+      // Capture single base64 frame for optional Cloud Provider registration
+      const imageBase64 = captureFrameAsBase64(video);
 
       // Generate or retrieve persistent device ID
       let deviceId = typeof window !== 'undefined' ? localStorage.getItem('eventra_device_id') : null;
@@ -195,8 +264,10 @@ export function StudentFaceEnrollModal({
       const endpoint = isUpdateMode ? '/api/auth/update-face' : '/api/auth/face-enroll';
       const payload: any = {
         faceEmbedding: embedding,
+        embeddingSource: source,
         consentAccepted: true,
         deviceId,
+        imageBase64: imageBase64 || undefined,
       };
 
       if (isUpdateMode) {
@@ -324,7 +395,7 @@ export function StudentFaceEnrollModal({
                           faceDetected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-400'
                         }`}
                       />
-                      <span>{faceDetected ? 'Face Positioned' : 'Position face inside oval'}</span>
+                      <span>{statusNote}</span>
                     </div>
 
                     <div className="px-2.5 py-1 rounded-full text-[11px] font-mono text-cyan-300 bg-black/60 backdrop-blur-md border border-white/10">
@@ -398,7 +469,7 @@ export function StudentFaceEnrollModal({
                   className="mt-0.5 rounded border-white/20 bg-slate-900 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-[11px] text-slate-300 leading-relaxed">
-                  I consent to the generation and encrypted storage of a 128-dimensional biometric mathematical facial vector. I understand that <strong className="text-white">no photograph, image, or video is ever saved or stored</strong> on any server.
+                  I consent to the generation and encrypted storage of a 128-dimensional biometric mathematical facial vector. I understand that <strong className="text-white">no photograph, image, or video is ever saved permanently</strong> on any server and I may withdraw consent at any time.
                 </span>
               </label>
             </div>

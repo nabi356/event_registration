@@ -13,8 +13,9 @@ Built with an **Obsidian Glass** visual system, Eventra combines strict cryptogr
 * **Rolling Cryptographic QR**: 10-second automatic token refresh with circular countdown timer preventing replay, screenshot, and duplication attacks.
 * **Zero-Trust Perimeter Validation**: Localized 50m geofence validation confirming attendee proximity to the venue via GPS and Haversine calculations.
 * **Hardware Device Lock**: Cryptographic device signature binding preventing multi-session badge duplication across phones.
-* **First-Time Biometric Face Enrollment**: Privacy-preserving in-browser 128-dimensional biometric embedding generation with live webcam oval guide, liveness check (blink + head turn detection), and consent checkbox. **Only the mathematical embedding vector is stored — photographs or video feeds are never saved or transmitted.**
+* **First-Time Biometric Face Enrollment**: Privacy-preserving in-browser 128-dimensional biometric embedding generation using a real `@vladmandic/face-api` neural network, with a live webcam oval guide, genuine liveness analysis (68-point landmark Eye Aspect Ratio blink detection + head yaw turn detection), and a consent checkbox. **Only the mathematical embedding vector is stored — photographs or video feeds are never saved or transmitted.** Neural model weights are self-hosted from `/public/models`, so no face data leaves the browser.
 * **Voluntary Face Scan Re-Enrollment**: Students can update their enrolled face scan at any time through their profile menu (requires password re-entry).
+* **Biometric Consent Withdrawal**: Students can withdraw consent at any time from their profile menu, permanently deleting their facial template and vector embeddings while keeping their account, registrations, and dynamic QR pass fully active.
 * **Real Event Registration**: Interactive event registration, pass cancellation, and wallet roster.
 
 ### 2. Operations & Gate Management Suite
@@ -30,6 +31,9 @@ Built with an **Obsidian Glass** visual system, Eventra combines strict cryptogr
     * *"Spoof or fake face detected"*
     * *"Face does not match the ID presented"*
     * *"Same ID active in another overlapping event"*
+  * **DUPLICATE ENTRY (Amber Warning)**: Attendee is already marked present for this event. The original attendance timestamp is preserved and no second record is written.
+* **Extractor-Aware Matching**: Every stored template records which extractor produced it (`neural` or `heuristic`). The gate only ever compares like with like, and refuses cross-extractor comparisons outright rather than returning a random accept or reject. Untagged legacy records are treated as incompatible and require re-enrollment.
+* **Pluggable Server-Side Face Providers**: The built-in `face-api` pipeline is the default, with optional Face++ (Megvii), Luxand.cloud, and AWS Rekognition integration for server-side image matching. All credentials are read from server-side environment variables and are never exposed to the browser.
 * **Overlapping Event Clash Detection**: Identifies students attempting concurrent access to events with overlapping time windows. Blocks unauthorized access, makes live face scan mandatory, logs security alerts, and prevents simultaneous attendance.
 * **Rapid Gate Check-in**: High-throughput gate terminal supporting live QR tokens, student enrollment numbers, and ticket references.
 * **Live Verification Activity Stream**: Sub-second attendee check-in ingestion with instant status tags (All / Verified / Flagged filters).
@@ -52,6 +56,18 @@ JWT_SECRET=eventra_super_secure_jwt_secret_key_2026_xyz987
 
 # Application URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Face recognition provider: 'face-api' (default, built-in), 'facepp', 'luxand', or 'aws'
+FACE_RECOGNITION_PROVIDER=face-api
+
+# Optional cloud provider credentials (server-side only, leave empty for the default)
+FACEPP_API_KEY=
+FACEPP_API_SECRET=
+LUXAND_API_KEY=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_REGION=us-east-1
+AWS_REKOGNITION_COLLECTION_ID=eventra-attendees
 ```
 
 ---

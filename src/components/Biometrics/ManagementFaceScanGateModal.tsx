@@ -19,8 +19,10 @@ import {
 } from 'lucide-react';
 import { EventItem } from '@/lib/types';
 import {
-  detectFaceInOval,
-  extractFaceEmbeddingFromCanvas,
+  loadBiometricModels,
+  analyzeFaceWithNeuralNet,
+  captureFrameAsBase64,
+  extractBiometricEmbedding,
 } from '@/lib/biometrics';
 
 interface ManagementFaceScanGateModalProps {
@@ -34,7 +36,9 @@ interface ManagementFaceScanGateModalProps {
 
 interface VerificationResult {
   verified: boolean;
+  alreadyCheckedIn?: boolean;
   reason?: string;
+  confidence?: string;
   student?: {
     name: string;
     enrollmentNo: string;
@@ -58,6 +62,7 @@ export function ManagementFaceScanGateModal({
 }: ManagementFaceScanGateModalProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -67,6 +72,11 @@ export function ManagementFaceScanGateModal({
   const [result, setResult] = useState<VerificationResult | null>(null);
   const [presentedId, setPresentedId] = useState('');
   const [isEventDropdownOpen, setIsEventDropdownOpen] = useState(false);
+
+  // Initialize neural models on mount
+  useEffect(() => {
+    loadBiometricModels();
+  }, []);
 
   // Start camera
   const startCamera = useCallback(async () => {
@@ -79,21 +89,39 @@ export function ManagementFaceScanGateModal({
           height: { ideal: 480 },
         },
       });
+      streamRef.current = mediaStream;
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        videoRef.current.play();
-      }
     } catch (err: any) {
       console.warn('Management camera error:', err);
       setCameraError('Camera access unavailable. Please grant webcam permissions.');
     }
   }, []);
 
+  // Stop camera. Reads from the ref so this callback's identity never changes —
+  // a `stream` dependency would re-run the open effect and re-open the camera.
   const stopCamera = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      setStream(null);
+    const current = streamRef.current;
+    if (current) {
+      current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setStream(null);
+  }, []);
+
+  // Attach the stream only once the <video> element actually exists. The element
+  // is rendered inside AnimatePresence, so on first open it is still null when
+  // getUserMedia resolves — attaching here instead of in startCamera avoids a
+  // silently black preview.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !stream) return;
+
+    video.srcObject = stream;
+    // play() rejects when the element is torn down mid playback (modal closed,
+    // StrictMode double-invoke). Swallow it: it is expected, not an error.
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {});
     }
   }, [stream]);
 
@@ -110,23 +138,29 @@ export function ManagementFaceScanGateModal({
     };
   }, [isOpen, startCamera, stopCamera]);
 
-  // Video frame detector
+  // Video frame detector with neural face analysis
   useEffect(() => {
     if (!isOpen || cameraError) return;
 
     let animId: number;
-    const checkFrame = () => {
-      if (videoRef.current && canvasRef.current && videoRef.current.readyState === 4) {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 480;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    let isBusy = false;
+    let count = 0;
 
-          const analysis = detectFaceInOval(canvas);
-          setFaceDetected(analysis.detected);
+    const checkFrame = async () => {
+      if (videoRef.current && videoRef.current.readyState === 4 && !isBusy) {
+        isBusy = true;
+        count++;
+        try {
+          const video = videoRef.current;
+          // Analyze face every 6th frame for silky smooth UI
+          if (count % 6 === 0) {
+            const analysis = await analyzeFaceWithNeuralNet(video, false);
+            setFaceDetected(analysis.detected);
+          }
+        } catch {
+          // ignore transient frame error
+        } finally {
+          isBusy = false;
         }
       }
       animId = requestAnimationFrame(checkFrame);
@@ -138,21 +172,18 @@ export function ManagementFaceScanGateModal({
 
   // Trigger Biometric Verification Scan
   const handleScanAttendee = async (simulateSpoof = false) => {
-    if (!canvasRef.current || isScanning || !selectedEvent?.id) return;
+    if (!videoRef.current || isScanning || !selectedEvent?.id) return;
 
     setIsScanning(true);
     setResult(null);
 
     try {
-      const canvas = canvasRef.current;
-      const faceBox = {
-        x: canvas.width * 0.25,
-        y: canvas.height * 0.2,
-        width: canvas.width * 0.5,
-        height: canvas.height * 0.6,
-      };
+      const video = videoRef.current;
+      // Extract a live 128-d descriptor and tag the extractor that produced it, so
+      // the server only matches against enrolled templates in the same vector space.
+      const { embedding, source } = await extractBiometricEmbedding(video, canvasRef.current);
 
-      const embedding = extractFaceEmbeddingFromCanvas(canvas, faceBox);
+      const imageBase64 = captureFrameAsBase64(video);
       const authToken = typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : '';
 
       const response = await fetch('/api/checkin/verify-face', {
@@ -164,6 +195,8 @@ export function ManagementFaceScanGateModal({
         body: JSON.stringify({
           eventId: selectedEvent.id,
           faceEmbedding: embedding,
+          embeddingSource: source,
+          imageBase64: imageBase64 || undefined,
           livenessVerified: !simulateSpoof, // True unless simulating spoof
           presentedEnrollmentNo: presentedId.trim() || undefined,
           terminalId: 'Gate-Terminal-01',
@@ -174,12 +207,14 @@ export function ManagementFaceScanGateModal({
 
       setResult({
         verified: data.verified,
+        alreadyCheckedIn: data.alreadyCheckedIn,
         reason: data.reason,
         student: data.student,
         event: data.event,
+        confidence: data.confidence,
       });
 
-      // Notify parent to refresh live check-in feed and metric counter
+      // Notify parent to refresh live check-in feed, metric counter, and attendees
       onVerificationLogged();
     } catch (err: any) {
       setResult({
@@ -426,6 +461,8 @@ export function ManagementFaceScanGateModal({
                       className={`flex-1 rounded-2xl p-5 border flex flex-col justify-between transition-all ${
                         result.verified
                           ? 'bg-emerald-500/[0.12] border-emerald-500/40 shadow-xl shadow-emerald-950/40'
+                          : result.alreadyCheckedIn
+                          ? 'bg-amber-500/[0.12] border-amber-500/40 shadow-xl shadow-amber-950/40'
                           : 'bg-rose-500/[0.12] border-rose-500/40 shadow-xl shadow-rose-950/40'
                       }`}
                     >
@@ -436,11 +473,15 @@ export function ManagementFaceScanGateModal({
                             className={`w-12 h-12 rounded-2xl flex items-center justify-center border shadow-lg ${
                               result.verified
                                 ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-400'
+                                : result.alreadyCheckedIn
+                                ? 'bg-amber-500/20 border-amber-400/50 text-amber-400'
                                 : 'bg-rose-500/20 border-rose-400/50 text-rose-400'
                             }`}
                           >
                             {result.verified ? (
                               <CheckCircle2 className="w-7 h-7 stroke-[2.4]" />
+                            ) : result.alreadyCheckedIn ? (
+                              <AlertTriangle className="w-7 h-7 stroke-[2.4]" />
                             ) : (
                               <XCircle className="w-7 h-7 stroke-[2.4]" />
                             )}
@@ -450,25 +491,57 @@ export function ManagementFaceScanGateModal({
                             className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
                               result.verified
                                 ? 'bg-emerald-500/25 border-emerald-400/40 text-emerald-300'
+                                : result.alreadyCheckedIn
+                                ? 'bg-amber-500/25 border-amber-400/40 text-amber-300'
                                 : 'bg-rose-500/25 border-rose-400/40 text-rose-300'
                             }`}
                           >
-                            {result.verified ? 'VERIFIED' : 'UNVERIFIED'}
+                            {result.verified
+                              ? 'VERIFIED'
+                              : result.alreadyCheckedIn
+                              ? 'DUPLICATE ENTRY'
+                              : 'UNVERIFIED'}
                           </span>
                         </div>
 
                         {/* Title & Reason */}
                         <h3 className="text-lg font-bold text-white tracking-tight">
-                          {result.verified ? 'Entry Approved' : 'Gate Access Denied'}
+                          {result.verified
+                            ? 'Entry Approved'
+                            : result.alreadyCheckedIn
+                            ? 'Already Checked In'
+                            : 'Gate Access Denied'}
                         </h3>
 
                         {!result.verified && result.reason && (
-                          <div className="mt-2.5 p-3 rounded-xl bg-black/40 border border-rose-500/30">
-                            <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400 block mb-0.5">
-                              Exact Rejection Reason
+                          <div
+                            className={`mt-2.5 p-3 rounded-xl bg-black/40 border ${
+                              result.alreadyCheckedIn
+                                ? 'border-amber-500/30'
+                                : 'border-rose-500/30'
+                            }`}
+                          >
+                            <span
+                              className={`text-[10px] font-semibold uppercase tracking-wider block mb-0.5 ${
+                                result.alreadyCheckedIn
+                                  ? 'text-amber-400'
+                                  : 'text-rose-400'
+                              }`}
+                            >
+                              {result.alreadyCheckedIn
+                                ? 'Duplicate Scan Notice'
+                                : 'Exact Rejection Reason'}
                             </span>
-                            <p className="text-xs font-semibold text-rose-200 leading-snug">
-                              {result.reason}
+                            <p
+                              className={`text-xs font-semibold leading-snug ${
+                                result.alreadyCheckedIn
+                                  ? 'text-amber-200'
+                                  : 'text-rose-200'
+                              }`}
+                            >
+                              {result.alreadyCheckedIn
+                                ? 'Attendee is already marked present for this event. Duplicate attendance record prevented.'
+                                : result.reason}
                             </p>
                           </div>
                         )}
@@ -498,9 +571,13 @@ export function ManagementFaceScanGateModal({
                               {result.student.entryTime && (
                                 <div>
                                   <span className="text-[10px] uppercase text-slate-400 block">
-                                    Entry Time
+                                    {result.alreadyCheckedIn ? 'Checked-In At' : 'Entry Time'}
                                   </span>
-                                  <span className="font-mono text-emerald-300">
+                                  <span
+                                    className={`font-mono ${
+                                      result.verified ? 'text-emerald-300' : 'text-amber-300'
+                                    }`}
+                                  >
                                     {result.student.entryTime}
                                   </span>
                                 </div>
@@ -521,8 +598,16 @@ export function ManagementFaceScanGateModal({
 
                       {/* Bottom Footer Notice */}
                       <div className="pt-3 border-t border-white/[0.06] text-[10px] text-slate-400 mt-4 flex items-center justify-between">
-                        <span>Logged in Live Check-in stream</span>
-                        <span className="font-mono">GATE-SYNC-OK</span>
+                        <span>
+                          {result.verified
+                            ? 'Logged in Live Check-in stream'
+                            : result.alreadyCheckedIn
+                            ? 'Attendance stamp preserved'
+                            : 'Security telemetry recorded'}
+                        </span>
+                        <span className="font-mono text-cyan-300">
+                          {result.confidence ? `MATCH ${result.confidence}` : 'GATE-SYNC-OK'}
+                        </span>
                       </div>
                     </motion.div>
                   ) : (

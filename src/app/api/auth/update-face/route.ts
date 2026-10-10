@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { User } from '@/models/User';
+import { Registration } from '@/models/Registration';
 import { getAuthUser, comparePassword } from '@/lib/auth';
+import { enrollFaceWithCloudProvider, getActiveFaceProviderName, usesCloudImageProvider } from '@/lib/cloudFaceProvider';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
     const body = await req.json();
-    const { password, faceEmbedding, consentAccepted } = body;
+    const { password, faceEmbedding, consentAccepted, imageBase64, embeddingSource } = body;
 
     if (!password) {
       return NextResponse.json(
@@ -38,6 +40,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (embeddingSource !== 'neural' && embeddingSource !== 'heuristic') {
+      return NextResponse.json(
+        { success: false, error: 'Biometric extractor source must be declared as "neural" or "heuristic".' },
+        { status: 400 }
+      );
+    }
+
     const user = await User.findById(authUser.userId);
     if (!user) {
       return NextResponse.json(
@@ -54,14 +63,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const activeProvider = getActiveFaceProviderName();
+    let cloudFaceToken: string | undefined = undefined;
+
+    if (imageBase64 && usesCloudImageProvider(activeProvider)) {
+      const cloudRes = await enrollFaceWithCloudProvider(imageBase64, user.name);
+      if (cloudRes.success && cloudRes.faceToken) {
+        cloudFaceToken = cloudRes.faceToken;
+      }
+    }
+
+    const now = new Date();
     user.faceEmbedding = faceEmbedding;
-    user.faceUpdatedAt = new Date();
+    user.embeddingSource = embeddingSource;
+    if (cloudFaceToken) user.faceProviderId = cloudFaceToken;
+    user.faceProvider = activeProvider;
+    user.biometricConsent = true;
+    user.biometricConsentDate = now;
+    user.faceUpdatedAt = now;
     await user.save();
+
+    await Registration.updateMany(
+      { userId: user._id },
+      { $set: { updatedAt: now } }
+    );
 
     return NextResponse.json({
       success: true,
-      message: 'Face biometric scan updated successfully.',
+      message: 'Face biometric credentials updated successfully.',
       faceUpdatedAt: user.faceUpdatedAt,
+      provider: activeProvider,
+      embeddingSource: user.embeddingSource,
     });
   } catch (error: any) {
     console.error('Update face error:', error);

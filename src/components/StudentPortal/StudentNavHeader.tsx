@@ -22,6 +22,7 @@ export function StudentNavHeader() {
     deleteAccount,
     setIsFaceEnrollModalOpen,
     setFaceEnrollUpdateMode,
+    withdrawBiometricConsent,
   } = useEventSystem();
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -220,6 +221,21 @@ export function StudentNavHeader() {
                     <Camera className="w-4 h-4 text-blue-400" />
                     <span>Update Face Biometrics</span>
                   </button>
+
+                  {hasFaceEnrolled && (
+                    <button
+                      onClick={() => {
+                        if (confirm('Withdraw biometric consent and permanently delete your enrolled face embedding? (You can continue checking in using your dynamic QR pass)')) {
+                          withdrawBiometricConsent();
+                          setShowProfileMenu(false);
+                        }
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 transition-colors text-left cursor-pointer"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-amber-400" />
+                      <span>Withdraw Biometric Consent</span>
+                    </button>
+                  )}
 
                   <button
                     onClick={handleSignOut}

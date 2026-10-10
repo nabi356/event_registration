@@ -37,6 +37,7 @@ const CheckInSchema = new Schema<ICheckIn>(
 // TTL Index for Auto-Clear (Data Retention)
 CheckInSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 CheckInSchema.index({ eventId: 1, timestamp: -1 });
+CheckInSchema.index({ userId: 1, eventId: 1, result: 1 });
 
 export const CheckIn: Model<ICheckIn> =
   mongoose.models.CheckIn || mongoose.model<ICheckIn>('CheckIn', CheckInSchema);

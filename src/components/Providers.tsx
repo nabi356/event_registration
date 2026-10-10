@@ -1,12 +1,21 @@
 "use client";
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { EventSystemProvider, useEventSystem } from '@/context/EventSystemContext';
 import { ToastContainer } from '@/components/ToastContainer';
-import { StudentFaceEnrollModal } from '@/components/Biometrics/StudentFaceEnrollModal';
-import { ManagementFaceScanGateModal } from '@/components/Biometrics/ManagementFaceScanGateModal';
 import { RapidGateCheckInModal } from '@/components/ManagementDashboard/RapidGateCheckInModal';
 import { EventFormModal } from '@/components/ManagementDashboard/EventFormModal';
+
+const StudentFaceEnrollModal = dynamic(
+  () => import('@/components/Biometrics/StudentFaceEnrollModal').then((m) => m.StudentFaceEnrollModal),
+  { ssr: false }
+);
+
+const ManagementFaceScanGateModal = dynamic(
+  () => import('@/components/Biometrics/ManagementFaceScanGateModal').then((m) => m.ManagementFaceScanGateModal),
+  { ssr: false }
+);
 
 function GlobalModals() {
   const {
@@ -53,6 +62,7 @@ function GlobalModals() {
         onVerificationLogged={() => {
           refreshCheckIns();
           refreshSecurityTelemetry();
+          refreshEvents();
         }}
       />
 
@@ -64,6 +74,7 @@ function GlobalModals() {
         onCheckInLogged={() => {
           refreshCheckIns();
           refreshSecurityTelemetry();
+          refreshEvents();
         }}
       />
 

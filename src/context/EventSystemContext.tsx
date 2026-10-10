@@ -35,6 +35,7 @@ interface EventSystemContextType {
   logoutUser: () => void;
   deleteAccount: () => Promise<void>;
   updateUserFaceState: (updatedAt: string) => void;
+  withdrawBiometricConsent: () => Promise<void>;
 
   // Selected Active Event & List
   selectedEvent: EventItem | null;
@@ -564,6 +565,39 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
     }
   };
 
+  const withdrawBiometricConsent = async () => {
+    try {
+      const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
+      const res = await fetch('/api/auth/consent', {
+        method: 'DELETE',
+        headers: {
+          Authorization: authToken ? `Bearer ${authToken}` : '',
+        },
+      });
+      const data = await res.json();
+      if (data.success && currentUser) {
+        const updated = {
+          ...currentUser,
+          hasFaceEnrolled: false,
+          faceUpdatedAt: undefined,
+        };
+        setCurrentUser(updated);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('eventra_user', JSON.stringify(updated));
+        }
+        addToast(
+          'info',
+          'Biometrics Erased',
+          'Consent withdrawn and facial templates permanently deleted. You can use dynamic QR passes for event check-in.'
+        );
+      } else {
+        addToast('error', 'Error', data.error || 'Failed to withdraw biometric consent');
+      }
+    } catch (err: any) {
+      addToast('error', 'Error', err.message);
+    }
+  };
+
   // Computed capacity percentage
   const capacityPercentage =
     totalRegistered > 0 ? ((checkedInCount / totalRegistered) * 100).toFixed(1) : '0.0';
@@ -687,6 +721,7 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
         logoutUser,
         deleteAccount,
         updateUserFaceState,
+        withdrawBiometricConsent,
         selectedEvent,
         setSelectedEvent,
         events,

@@ -1,4 +1,12 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
+
+// Fix Node.js SRV query resolution on Windows platforms
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch {
+  // Ignore in browser or restricted environments
+}
 
 const ATLAS_URI = 'mongodb+srv://dancernabi_db_user:Nabi2005@cluster0.blsmvvs.mongodb.net/eventra?retryWrites=true&w=majority&appName=Cluster0';
 const rawUri = process.env.MONGODB_URI?.trim();
