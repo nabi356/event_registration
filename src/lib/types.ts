@@ -18,6 +18,7 @@ export interface EventItem {
   imageUrl?: string;
   startTime?: string | Date;
   endTime?: string | Date;
+  registrationDeadline?: string | Date;
   lat?: number;
   lng?: number;
   radiusMeters?: number;

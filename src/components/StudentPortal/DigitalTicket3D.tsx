@@ -15,6 +15,7 @@ import {
   LogIn,
   Sparkles,
   Ticket,
+  AlertCircle,
 } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
 import { getEventImage } from '@/lib/eventImages';
@@ -33,6 +34,9 @@ export function DigitalTicket3D() {
     setIsAuthModalOpen,
     addToast,
   } = useEventSystem();
+
+  const deadlineDate = selectedEvent ? new Date(selectedEvent.registrationDeadline || selectedEvent.startTime || 0) : null;
+  const isPastDeadline = Boolean(deadlineDate && !isNaN(deadlineDate.getTime()) && new Date() > deadlineDate);
 
   if (!selectedEvent) {
     return (
@@ -117,6 +121,11 @@ export function DigitalTicket3D() {
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Confirmed</span>
                 </div>
+              ) : isPastDeadline ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-950/70 backdrop-blur-md border border-rose-500/60 text-rose-300 text-[11px] font-semibold">
+                  <AlertCircle className="w-3 h-3 text-rose-400" />
+                  <span>Deadline Passed</span>
+                </div>
               ) : (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/20 backdrop-blur-md border border-amber-500/40 text-amber-300 text-[11px] font-semibold">
                   <span className="w-2 h-2 rounded-full bg-amber-400" />
@@ -198,13 +207,24 @@ export function DigitalTicket3D() {
                   <span>Sign In to Access Pass</span>
                 </button>
               ) : !isRegistered ? (
-                <button
-                  onClick={() => registerForEvent(selectedEvent.id)}
-                  className="w-full rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 py-3 px-4 flex items-center justify-center gap-2 text-xs font-bold text-white shadow-lg shadow-red-950/50 transition-all cursor-pointer"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>Register for Pass</span>
-                </button>
+                isPastDeadline ? (
+                  <button
+                    disabled
+                    className="w-full rounded-xl bg-zinc-800/80 border border-red-500/30 py-3 px-4 flex items-center justify-center gap-2 text-xs font-bold text-zinc-400 cursor-not-allowed shadow-inner"
+                    title="Registrations for this event are closed as the deadline has passed."
+                  >
+                    <AlertCircle className="w-4 h-4 text-rose-500" />
+                    <span>Registration Closed (Deadline Passed)</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => registerForEvent(selectedEvent.id)}
+                    className="w-full rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 py-3 px-4 flex items-center justify-center gap-2 text-xs font-bold text-white shadow-lg shadow-red-950/50 transition-all cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Register for Pass</span>
+                  </button>
+                )
               ) : (
                 <button
                   id="btn-show-qr"

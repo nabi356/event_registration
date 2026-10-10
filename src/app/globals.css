@@ -233,6 +233,35 @@ html[data-theme="light"] button[class*="from-red-700"] span {
   color: #FFFFFF !important;
 }
 
+/* Explicit Dark Dropdown Panels (Notifications, Profile Menus) - ALWAYS White Text */
+.dropdown-panel-dark,
+.dropdown-panel-dark * {
+  color-scheme: dark !important;
+}
+
+html[data-theme="light"] .dropdown-panel-dark,
+html[data-theme="light"] .dropdown-panel-dark p,
+html[data-theme="light"] .dropdown-panel-dark span,
+html[data-theme="light"] .dropdown-panel-dark button,
+html[data-theme="light"] .dropdown-panel-dark button span,
+html[data-theme="light"] .dropdown-panel-dark div,
+html[data-theme="light"] .dropdown-panel-dark h1,
+html[data-theme="light"] .dropdown-panel-dark h2,
+html[data-theme="light"] .dropdown-panel-dark h3,
+html[data-theme="light"] .dropdown-panel-dark h4 {
+  color: #FFFFFF !important;
+}
+
+html[data-theme="light"] .dropdown-panel-dark .text-amber-400,
+html[data-theme="light"] .dropdown-panel-dark span.text-amber-400 {
+  color: #FBBF24 !important;
+}
+
+html[data-theme="light"] .dropdown-panel-dark .text-rose-300,
+html[data-theme="light"] .dropdown-panel-dark span.text-rose-300 {
+  color: #FDA4AF !important;
+}
+
 /* Inputs in light mode */
 html[data-theme="light"] input,
 html[data-theme="light"] select,

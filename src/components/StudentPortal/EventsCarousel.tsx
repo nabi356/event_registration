@@ -161,6 +161,8 @@ export function EventsCarousel() {
                 )
             );
             const coverImage = getEventImage(evt);
+            const evtDeadline = new Date(evt.registrationDeadline || evt.startTime || 0);
+            const isPastDeadline = Boolean(evtDeadline && !isNaN(evtDeadline.getTime()) && new Date() > evtDeadline);
 
             return (
               <motion.div
@@ -200,11 +202,27 @@ export function EventsCarousel() {
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md ${
                         isRegistered
                           ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+                          : isPastDeadline
+                          ? 'bg-rose-950/70 text-rose-300 border border-rose-500/50'
                           : 'bg-red-600/30 text-red-300 border border-red-500/40'
                       }`}
                     >
-                      <CheckCircle className="w-2.5 h-2.5" />
-                      <span>{isRegistered ? 'Registered' : 'Available'}</span>
+                      {isRegistered ? (
+                        <>
+                          <CheckCircle className="w-2.5 h-2.5" />
+                          <span>Registered</span>
+                        </>
+                      ) : isPastDeadline ? (
+                        <>
+                          <Clock className="w-2.5 h-2.5 text-rose-400" />
+                          <span>Closed</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-2.5 h-2.5" />
+                          <span>Available</span>
+                        </>
+                      )}
                     </span>
                   </div>
 
@@ -243,10 +261,19 @@ export function EventsCarousel() {
                         <UserMinus className="w-3 h-3" />
                         <span>Cancel Pass</span>
                       </button>
+                    ) : isPastDeadline ? (
+                      <button
+                        disabled
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-800/80 text-zinc-400 font-bold text-[11px] border border-red-500/20 cursor-not-allowed"
+                        title="Registration deadline has passed"
+                      >
+                        <Clock className="w-3 h-3 text-rose-400" />
+                        <span>Closed</span>
+                      </button>
                     ) : (
                       <button
                         onClick={(e) => handleRegisterClick(e, evt.id)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold text-[11px] shadow-sm shadow-red-950/40 transition-all"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold text-[11px] shadow-sm shadow-red-950/40 transition-all cursor-pointer"
                       >
                         <UserPlus className="w-3 h-3" />
                         <span>Claim Pass</span>

@@ -469,6 +469,19 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
       return false;
     }
 
+    const targetEvent = events.find((e) => e.id === eventId);
+    if (targetEvent) {
+      const deadline = targetEvent.registrationDeadline || targetEvent.startTime;
+      if (deadline && new Date() > new Date(deadline)) {
+        addToast(
+          'error',
+          'Registration Closed',
+          'The deadline for this event has passed. No further registrations can be accepted.'
+        );
+        return false;
+      }
+    }
+
     try {
       const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
       const res = await fetch('/api/registrations', {

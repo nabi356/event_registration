@@ -506,8 +506,9 @@ export default function UnifiedGatewayPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full border-t border-red-500/20 bg-black/60 dark:bg-[#0B0A0E]/80 backdrop-blur-md py-4 text-center text-xs text-slate-400">
-        <p>Eventra · Campus Event Operations & Biometric Gate Pass Platform</p>
+      <footer className="relative z-10 w-full border-t-2 border-red-500/25 bg-black/60 dark:bg-[#0B0A0E]/80 backdrop-blur-md py-5 text-center text-xs text-slate-600 dark:text-slate-400">
+        <p className="font-medium">© 2026 Eventra Operations. All rights reserved. Campus Event Operations & Zero-Trust Check-in.</p>
+        <p className="text-[11px] text-slate-500 mt-1">Zero-Trust Biometrics • Hardware Geofenced Perimeter • High-Entropy Dynamic QR</p>
       </footer>
     </div>
   );

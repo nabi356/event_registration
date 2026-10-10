@@ -91,6 +91,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Event not found.' }, { status: 404 });
     }
 
+    // Check registration deadline
+    const deadline = event.registrationDeadline || event.startTime;
+    if (deadline && new Date() > new Date(deadline)) {
+      const formattedDeadline = new Date(deadline).toLocaleString('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Registration closed. The deadline for this event was ${formattedDeadline}. No new registrations are accepted after the deadline.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Check capacity
     const currentCount = await Registration.countDocuments({
       eventId,

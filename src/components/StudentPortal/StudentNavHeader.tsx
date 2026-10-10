@@ -194,28 +194,28 @@ export function StudentNavHeader() {
               </button>
 
               {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-[#161218]/95 border border-red-500/25 shadow-2xl backdrop-blur-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="dropdown-panel-dark absolute right-0 mt-2 w-80 rounded-2xl bg-[#140F18] border-2 border-red-500/30 shadow-2xl backdrop-blur-2xl p-4 z-50 animate-in fade-in zoom-in-95 duration-150">
                   <div className="flex items-center justify-between pb-3 border-b border-red-500/20 mb-3">
                     <div className="flex items-center gap-2">
                       <Ticket className="w-4 h-4 text-red-400" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-white">
+                      <span className="text-xs font-bold uppercase tracking-wider !text-white">
                         Pass Notifications
                       </span>
                     </div>
-                    <span className="text-[10px] text-amber-400 font-mono">Live</span>
+                    <span className="text-[10px] text-amber-400 font-mono font-bold">Live</span>
                   </div>
 
                   <div className="space-y-2.5">
                     {notifications.map((item) => (
                       <div
                         key={item.id}
-                        className="p-2.5 rounded-xl bg-white/[0.03] border border-red-500/10 hover:border-red-500/30 transition-colors"
+                        className="p-2.5 rounded-xl bg-white/[0.04] border border-red-500/15 hover:border-red-500/35 transition-colors"
                       >
                         <div className="flex items-center justify-between">
-                          <p className="text-xs font-semibold text-slate-200">{item.title}</p>
-                          <span className="text-[10px] text-amber-400">{item.time}</span>
+                          <p className="text-xs font-bold !text-white">{item.title}</p>
+                          <span className="text-[10px] text-amber-400 font-mono font-semibold">{item.time}</span>
                         </div>
-                        <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                        <p className="text-[11px] !text-white/90 mt-1 leading-snug">
                           {item.desc}
                         </p>
                       </div>
@@ -230,7 +230,7 @@ export function StudentNavHeader() {
           {!currentUser ? (
             <button
               onClick={() => router.push('/')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-xs font-bold text-white shadow-md shadow-red-950/40 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-xs font-bold !text-white shadow-md shadow-red-950/40 transition-all cursor-pointer"
             >
               <span>Sign In</span>
             </button>
@@ -240,14 +240,14 @@ export function StudentNavHeader() {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center gap-2 pl-2 py-1 pr-2 rounded-xl hover:bg-white/[0.04] border-l border-red-500/20 transition-colors cursor-pointer"
               >
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-red-700 via-rose-600 to-amber-600 border border-amber-400/30 flex items-center justify-center text-xs font-bold text-white shadow-inner">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-red-700 via-rose-600 to-amber-600 border border-amber-400/30 flex items-center justify-center text-xs font-bold !text-white shadow-inner">
                   {studentName.substring(0, 2).toUpperCase()}
                 </div>
                 <div className="hidden sm:block text-left">
-                  <div className="text-xs font-bold text-white leading-tight">
+                  <div className="text-xs font-bold text-black dark:text-white leading-tight">
                     {studentName}
                   </div>
-                  <div className="text-[10px] text-amber-400/80 font-mono leading-tight">
+                  <div className="text-[10px] text-amber-500 dark:text-amber-400 font-mono font-semibold leading-tight">
                     {studentId}
                   </div>
                 </div>
@@ -255,11 +255,11 @@ export function StudentNavHeader() {
               </button>
 
               {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#161218]/95 border border-red-500/25 shadow-2xl backdrop-blur-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3 py-2 border-b border-white/[0.06] mb-1">
-                    <span className="text-xs font-bold text-white block">{studentName}</span>
-                    <span className="text-[10px] font-mono text-amber-400">{studentId}</span>
-                    <span className="text-[10px] text-slate-400 block truncate">
+                <div className="dropdown-panel-dark absolute right-0 mt-2 w-64 rounded-2xl bg-[#140F18] border-2 border-red-500/30 shadow-2xl backdrop-blur-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3 py-2 border-b border-white/[0.08] mb-1">
+                    <span className="text-xs font-bold !text-white block">{studentName}</span>
+                    <span className="text-[10px] font-mono text-amber-400 font-semibold">{studentId}</span>
+                    <span className="text-[10px] !text-white/80 block truncate mt-0.5">
                       {currentUser?.email}
                     </span>
                   </div>
@@ -267,10 +267,10 @@ export function StudentNavHeader() {
                   <div className="space-y-1 text-xs">
                     <button
                       onClick={handleUpdateFaceClick}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-200 hover:text-white hover:bg-red-600/15 transition-colors text-left cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl !text-white hover:bg-red-600/20 transition-colors text-left cursor-pointer"
                     >
                       <Camera className="w-4 h-4 text-red-400" />
-                      <span>Update Face Biometrics</span>
+                      <span className="!text-white font-medium">Update Face Biometrics</span>
                     </button>
 
                     {hasFaceEnrolled && (
@@ -281,19 +281,19 @@ export function StudentNavHeader() {
                             setShowProfileMenu(false);
                           }
                         }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-amber-300 hover:text-amber-200 hover:bg-amber-500/10 transition-colors text-left cursor-pointer"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl !text-amber-300 hover:bg-amber-500/15 transition-colors text-left cursor-pointer"
                       >
                         <ShieldCheck className="w-4 h-4 text-amber-400" />
-                        <span>Withdraw Biometric Consent</span>
+                        <span className="!text-amber-300 font-medium">Withdraw Biometric Consent</span>
                       </button>
                     )}
 
                     <button
                       onClick={handleSignOut}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors text-left cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl !text-white hover:bg-white/[0.08] transition-colors text-left cursor-pointer"
                     >
                       <LogOut className="w-4 h-4 text-slate-400" />
-                      <span>Sign Out</span>
+                      <span className="!text-white font-medium">Sign Out</span>
                     </button>
 
                     <button
@@ -303,10 +303,10 @@ export function StudentNavHeader() {
                           setShowProfileMenu(false);
                         }
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-rose-300 hover:text-rose-200 hover:bg-rose-500/10 transition-colors text-left pt-2 border-t border-white/[0.06] cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl !text-rose-300 hover:bg-rose-500/15 transition-colors text-left pt-2 border-t border-white/[0.08] cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4 text-rose-400" />
-                      <span>Delete Account</span>
+                      <span className="!text-rose-300 font-medium">Delete Account</span>
                     </button>
                   </div>
                 </div>

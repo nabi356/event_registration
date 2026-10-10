@@ -29,6 +29,7 @@ export async function GET() {
           category: evt.category || 'General',
           startTime: evt.startTime,
           endTime: evt.endTime,
+          registrationDeadline: evt.registrationDeadline || evt.startTime,
           date: new Date(evt.startTime).toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
     const body = await req.json();
-    const { name, category, startTime, endTime, venue, lat, lng, radiusMeters, capacity, accentColor } = body;
+    const { name, category, startTime, endTime, registrationDeadline, venue, lat, lng, radiusMeters, capacity, accentColor } = body;
 
     if (!name || !startTime || !endTime || !venue || lat === undefined || lng === undefined || !capacity) {
       return NextResponse.json(
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
       category: category || 'Keynote & Tech',
       startTime: new Date(startTime),
       endTime: new Date(endTime),
+      registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : new Date(startTime),
       venue,
       lat: Number(lat),
       lng: Number(lng),

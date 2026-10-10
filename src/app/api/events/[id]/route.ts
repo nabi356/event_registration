@@ -25,6 +25,7 @@ export async function PUT(
     if (body.category) updateData.category = body.category;
     if (body.startTime) updateData.startTime = new Date(body.startTime);
     if (body.endTime) updateData.endTime = new Date(body.endTime);
+    if (body.registrationDeadline) updateData.registrationDeadline = new Date(body.registrationDeadline);
     if (body.venue) updateData.venue = body.venue;
     if (body.lat !== undefined) updateData.lat = Number(body.lat);
     if (body.lng !== undefined) updateData.lng = Number(body.lng);

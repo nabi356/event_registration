@@ -5,6 +5,7 @@ export interface IEvent extends Document {
   category: string;
   startTime: Date;
   endTime: Date;
+  registrationDeadline?: Date;
   venue: string;
   lat: number;
   lng: number;
@@ -23,6 +24,7 @@ const EventSchema = new Schema<IEvent>(
     category: { type: String, default: 'General Event', trim: true },
     startTime: { type: Date, required: true },
     endTime: { type: Date, required: true },
+    registrationDeadline: { type: Date },
     venue: { type: String, required: true, trim: true },
     lat: { type: Number, required: true },
     lng: { type: Number, required: true },

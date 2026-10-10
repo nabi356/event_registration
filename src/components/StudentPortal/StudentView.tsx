@@ -3,6 +3,7 @@
 import React, { useRef } from 'react';
 import { EventsCarousel } from './EventsCarousel';
 import { DigitalTicket3D } from './DigitalTicket3D';
+import { FooterAndFAQ } from '@/components/FooterAndFAQ';
 import { useEventSystem } from '@/context/EventSystemContext';
 import {
   Ticket,
@@ -153,6 +154,9 @@ export function StudentView() {
           <DigitalTicket3D />
         </motion.div>
       </div>
+
+      {/* Interactive FAQ Section & Official Copyright Footer */}
+      <FooterAndFAQ />
 
     </div>
   );

@@ -25,6 +25,7 @@ export function EventFormModal({
   const [venue, setVenue] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [registrationDeadline, setRegistrationDeadline] = useState('');
   const [lat, setLat] = useState('28.5355');
   const [lng, setLng] = useState('77.3910');
   const [radiusMeters, setRadiusMeters] = useState('50');
@@ -40,6 +41,17 @@ export function EventFormModal({
       setCategory(eventToEdit.category || 'Keynote & Tech');
       setVenue(eventToEdit.venue);
       setAccentColor(eventToEdit.accentColor || '#3B82F6');
+      if (eventToEdit.startTime) {
+        setStartTime(new Date(eventToEdit.startTime).toISOString().slice(0, 16));
+      }
+      if (eventToEdit.endTime) {
+        setEndTime(new Date(eventToEdit.endTime).toISOString().slice(0, 16));
+      }
+      if (eventToEdit.registrationDeadline) {
+        setRegistrationDeadline(new Date(eventToEdit.registrationDeadline).toISOString().slice(0, 16));
+      } else if (eventToEdit.startTime) {
+        setRegistrationDeadline(new Date(eventToEdit.startTime).toISOString().slice(0, 16));
+      }
     } else {
       setName('');
       setCategory('Keynote & Tech');
@@ -47,6 +59,7 @@ export function EventFormModal({
       const now = new Date();
       setStartTime(new Date(now.getTime() + 3600000).toISOString().slice(0, 16));
       setEndTime(new Date(now.getTime() + 10800000).toISOString().slice(0, 16));
+      setRegistrationDeadline(new Date(now.getTime() + 3600000).toISOString().slice(0, 16));
       setLat('28.5355');
       setLng('77.3910');
       setRadiusMeters('50');
@@ -79,6 +92,7 @@ export function EventFormModal({
           venue,
           startTime,
           endTime,
+          registrationDeadline: registrationDeadline || startTime,
           lat: parseFloat(lat),
           lng: parseFloat(lng),
           radiusMeters: parseInt(radiusMeters, 10),
@@ -183,7 +197,7 @@ export function EventFormModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-[11px] font-semibold uppercase text-slate-400 block mb-1">
                     Start Date & Time
@@ -193,7 +207,7 @@ export function EventFormModal({
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     required
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white focus:outline-none focus:border-red-500"
                   />
                 </div>
 
@@ -206,7 +220,20 @@ export function EventFormModal({
                     value={endTime}
                     onChange={(e) => setEndTime(e.target.value)}
                     required
-                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white focus:outline-none focus:border-blue-500"
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-semibold uppercase text-amber-400 block mb-1">
+                    Registration Cutoff
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={registrationDeadline}
+                    onChange={(e) => setRegistrationDeadline(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 rounded-xl bg-white/[0.04] border border-amber-500/30 text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
