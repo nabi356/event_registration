@@ -15,6 +15,7 @@ export interface EventItem {
   seatTier?: string;
   doorsOpen?: string;
   accentColor?: string;
+  imageUrl?: string;
   startTime?: string | Date;
   endTime?: string | Date;
   lat?: number;

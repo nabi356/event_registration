@@ -7,7 +7,6 @@ import { Plus, Edit, ShieldAlert, LogIn, ArrowLeft } from 'lucide-react';
 import { ManagementHeader } from './ManagementHeader';
 import { Sidebar, NavItemKey } from './Sidebar';
 import { MetricCards } from './MetricCards';
-import { QuickSimulationBar } from './QuickSimulationBar';
 import { LiveCheckInFeed } from './LiveCheckInFeed';
 import { SecurityPanel } from './SecurityPanel';
 import { SecurityActivity } from './SecurityActivity';
@@ -26,26 +25,25 @@ export function ManagementView() {
     setIsEventFormModalOpen,
     setEventToEdit,
     currentUser,
-    setViewMode,
   } = useEventSystem();
 
-  // Strict UI-level access guard: management role required
+  // Access guard: management role required
   if (!currentUser || currentUser.role !== 'management') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
-        <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-4 shadow-lg shadow-rose-950/30">
+        <div className="w-16 h-16 rounded-2xl bg-red-600/15 border border-red-500/30 flex items-center justify-center text-red-400 mb-4 shadow-lg shadow-red-950/40">
           <ShieldAlert className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-2 tracking-tight">
+        <h2 className="text-xl font-black text-white mb-2 tracking-tight">
           Management Access Restricted
         </h2>
-        <p className="text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
-          The Campus Operations Suite and Gate Management Terminal are restricted to verified administrator and manager accounts. Students cannot access management functions.
+        <p className="text-xs sm:text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
+          The Campus Operations Suite and Gate Management Terminal are restricted to verified administrator and manager accounts.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <button
             onClick={() => router.push('/student')}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-blue-900/30"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white text-xs font-bold transition-all cursor-pointer shadow-lg shadow-red-950/40"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Go to Student Portal</span>
@@ -55,7 +53,7 @@ export function ManagementView() {
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] text-slate-200 text-xs font-semibold transition-all cursor-pointer"
           >
             <LogIn className="w-3.5 h-3.5" />
-            <span>Sign In as Management</span>
+            <span>Sign In as Staff</span>
           </button>
         </div>
       </div>
@@ -66,10 +64,10 @@ export function ManagementView() {
   if (!selectedEvent) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-6">
-        <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
+        <div className="w-16 h-16 rounded-2xl bg-red-600/15 border border-red-500/30 flex items-center justify-center text-red-400 mb-4">
           <Plus className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-2 tracking-tight">
+        <h2 className="text-xl font-black text-white mb-2 tracking-tight">
           No Events In Database
         </h2>
         <p className="text-sm text-slate-400 max-w-md mb-6">
@@ -80,7 +78,7 @@ export function ManagementView() {
             setEventToEdit(null);
             setIsEventFormModalOpen(true);
           }}
-          className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-lg shadow-blue-900/30"
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white text-xs font-bold transition-all cursor-pointer shadow-lg shadow-red-950/40"
         >
           Create First Event
         </button>
@@ -90,7 +88,7 @@ export function ManagementView() {
 
   return (
     <div className="flex gap-6 min-h-[calc(100vh-5rem)]">
-      {/* Sidebar */}
+      {/* Sidebar with Instant Tasks Rail */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -102,13 +100,13 @@ export function ManagementView() {
 
       {/* Main Operations Content Area */}
       <main className="flex-1 min-w-0 flex flex-col">
-        {/* Header */}
+        {/* Header with Global Search & Quick Actions */}
         <ManagementHeader
           onToggleMobileSidebar={() => setIsMobileDrawerOpen(true)}
           onOpenSettingsModal={() => setActiveTab('security')}
         />
 
-        {/* Tab Content with Framer Motion transition */}
+        {/* Tab Content with Smooth Transitions */}
         <AnimatePresence mode="wait">
           {activeTab === 'overview' && (
             <motion.div
@@ -119,24 +117,20 @@ export function ManagementView() {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              {/* Metric Cards (Total Registered, Currently Checked In with Roller, Capacity) */}
+              {/* Metric Cards */}
               <MetricCards />
-
-              {/* Simulation Quick Bar */}
-              <QuickSimulationBar />
 
               {/* 2-Column Grid: Live Check-in Feed & Security Panels */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left: Large Live Check-in Activity Panel (7 cols) */}
+                {/* Left: Large Live Check-in Feed (7 cols) */}
                 <div className="lg:col-span-7">
                   <LiveCheckInFeed />
                 </div>
 
-                {/* Right: Security & Capacity Panels (5 cols) */}
+                {/* Right: Venue Capacity & Security Guard (5 cols) */}
                 <div className="lg:col-span-5 space-y-6">
                   <EventCapacity />
                   <SecurityPanel />
-                  <SecurityActivity />
                 </div>
               </div>
             </motion.div>
@@ -151,7 +145,6 @@ export function ManagementView() {
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <QuickSimulationBar />
               <LiveCheckInFeed />
             </motion.div>
           )}
@@ -178,10 +171,10 @@ export function ManagementView() {
               className="space-y-6"
             >
               {/* Event Actions Bar */}
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-black/40 dark:bg-[#161218] border border-red-500/20">
                 <div>
-                  <h3 className="text-sm font-bold text-white tracking-tight">Campus Event Management</h3>
-                  <p className="text-xs text-slate-400">Configure geofence perimeters, capacities, and scheduling</p>
+                  <h3 className="text-sm font-bold text-white tracking-tight">Event Management</h3>
+                  <p className="text-xs text-slate-400">Configure parameters, capacities, and scheduling</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -191,7 +184,7 @@ export function ManagementView() {
                     }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-xs font-semibold text-slate-200 transition-colors"
                   >
-                    <Edit className="w-3.5 h-3.5 text-blue-400" />
+                    <Edit className="w-3.5 h-3.5 text-amber-400" />
                     <span>Edit Selected</span>
                   </button>
 
@@ -200,7 +193,7 @@ export function ManagementView() {
                       setEventToEdit(null);
                       setIsEventFormModalOpen(true);
                     }}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white shadow-lg shadow-blue-900/40 transition-colors"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-xs font-bold text-white shadow-lg shadow-red-950/40 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Create Event</span>
@@ -209,14 +202,10 @@ export function ManagementView() {
               </div>
 
               <EventsCarousel />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <EventCapacity />
-                <SecurityActivity />
-              </div>
             </motion.div>
           )}
 
-          {(activeTab === 'security' || activeTab === 'settings') && (
+          {activeTab === 'security' && (
             <motion.div
               key="security"
               initial={{ opacity: 0, y: 8 }}
@@ -226,10 +215,7 @@ export function ManagementView() {
               className="grid grid-cols-1 lg:grid-cols-2 gap-6"
             >
               <SecurityPanel />
-              <div className="space-y-6">
-                <SecurityActivity />
-                <EventCapacity />
-              </div>
+              <SecurityActivity />
             </motion.div>
           )}
 

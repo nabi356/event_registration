@@ -6,6 +6,8 @@ import { EventSystemProvider, useEventSystem } from '@/context/EventSystemContex
 import { ToastContainer } from '@/components/ToastContainer';
 import { RapidGateCheckInModal } from '@/components/ManagementDashboard/RapidGateCheckInModal';
 import { EventFormModal } from '@/components/ManagementDashboard/EventFormModal';
+import { ObsidianGlassBackground } from '@/components/ObsidianGlassBackground';
+import { CinematicIntro } from '@/components/CinematicIntro';
 
 const StudentFaceEnrollModal = dynamic(
   () => import('@/components/Biometrics/StudentFaceEnrollModal').then((m) => m.StudentFaceEnrollModal),
@@ -98,6 +100,12 @@ function GlobalModals() {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <EventSystemProvider>
+      {/* Global Futuristic Glassy Obsidian Dynamic Background */}
+      <ObsidianGlassBackground />
+
+      {/* Cinematic Title Card Entry Animation */}
+      <CinematicIntro />
+
       {children}
       <GlobalModals />
     </EventSystemProvider>

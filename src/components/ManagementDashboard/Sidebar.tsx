@@ -9,12 +9,15 @@ import {
   Calendar,
   ShieldCheck,
   BarChart3,
-  Settings,
   ChevronLeft,
   ChevronRight,
   X,
-  Radio,
   Scan,
+  Zap,
+  Download,
+  Plus,
+  Radio,
+  Sparkles,
 } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
 
@@ -24,8 +27,7 @@ export type NavItemKey =
   | 'attendees'
   | 'events'
   | 'security'
-  | 'reports'
-  | 'settings';
+  | 'reports';
 
 interface SidebarProps {
   activeTab: NavItemKey;
@@ -41,9 +43,8 @@ const NAV_ITEMS = [
   { key: 'live-checkin', label: 'Live Check-in', icon: QrCode, badge: 'Live' },
   { key: 'attendees', label: 'Attendees', icon: Users },
   { key: 'events', label: 'Events', icon: Calendar },
-  { key: 'security', label: 'Security', icon: ShieldCheck },
+  { key: 'security', label: 'Security & Telemetry', icon: ShieldCheck },
   { key: 'reports', label: 'Reports', icon: BarChart3 },
-  { key: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar({
@@ -54,24 +55,34 @@ export function Sidebar({
   isMobileDrawerOpen,
   onCloseMobileDrawer,
 }: SidebarProps) {
+  const {
+    setIsFaceScanGateModalOpen,
+    setIsRapidGateModalOpen,
+    setIsEventFormModalOpen,
+    setEventToEdit,
+    exportAttendeesCsv,
+  } = useEventSystem();
+
   const sidebarContent = (
     <div className="h-full flex flex-col justify-between py-5 px-3">
-      {/* Top brand / Section header */}
-      <div>
-        <div className="flex items-center justify-between px-2.5 mb-6">
+      {/* Top Navigation & Fast Finding Tasks */}
+      <div className="space-y-5">
+        
+        {/* Section Header */}
+        <div className="flex items-center justify-between px-2.5">
           {!isCollapsed && (
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[11px] font-black uppercase tracking-wider text-amber-400">
                 Operations Suite
               </span>
             </div>
           )}
 
-          {/* Desktop collapse button */}
+          {/* Collapse Toggle */}
           <button
             onClick={onToggleCollapse}
-            className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors ml-auto"
+            className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.05] transition-colors ml-auto cursor-pointer"
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isCollapsed ? (
@@ -82,8 +93,8 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Navigation list */}
-        <nav className="space-y-1.5">
+        {/* Primary Tabs Navigation */}
+        <nav className="space-y-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.key;
@@ -95,27 +106,25 @@ export function Sidebar({
                   onTabChange(item.key as NavItemKey);
                   onCloseMobileDrawer();
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all relative group ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all relative group cursor-pointer ${
                   isActive
-                    ? 'text-white bg-white/[0.08] border border-white/[0.1] shadow-md shadow-blue-950/20'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
+                    ? 'text-white bg-gradient-to-r from-red-600/30 to-rose-700/20 border border-red-500/40 shadow-md shadow-red-950/20'
+                    : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
                 } ${isCollapsed ? 'justify-center' : ''}`}
                 title={item.label}
               >
-                {/* Active indicator bar */}
+                {/* Active Indicator Bar */}
                 {isActive && (
                   <motion.div
                     layoutId="sidebarActivePill"
-                    className="absolute left-0 top-2 bottom-2 w-1 bg-blue-500 rounded-r-full"
+                    className="absolute left-0 top-2 bottom-2 w-1 bg-gradient-to-b from-red-500 to-amber-500 rounded-r-full"
                     transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                   />
                 )}
 
                 <Icon
                   className={`w-4 h-4 shrink-0 transition-colors ${
-                    isActive
-                      ? 'text-blue-400'
-                      : 'text-slate-400 group-hover:text-slate-200'
+                    isActive ? 'text-amber-400' : 'text-slate-400 group-hover:text-slate-200'
                   }`}
                 />
 
@@ -126,7 +135,7 @@ export function Sidebar({
                 )}
 
                 {!isCollapsed && item.badge && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-600/20 text-red-400 border border-red-500/30">
                     {item.badge}
                   </span>
                 )}
@@ -135,34 +144,88 @@ export function Sidebar({
           })}
         </nav>
 
-        {/* Face Scan Entry Dedicated Terminal Launcher */}
-        <button
-          onClick={() => {
-            useEventSystem().setIsFaceScanGateModalOpen(true);
-            onCloseMobileDrawer();
-          }}
-          className={`w-full mt-4 flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600/30 to-indigo-600/30 hover:from-blue-600/40 hover:to-indigo-600/40 border border-blue-500/40 text-blue-300 transition-all shadow-md shadow-blue-950/20 ${
-            isCollapsed ? 'justify-center' : ''
-          }`}
-          title="Face Scan Gate Entry"
-        >
-          <Scan className="w-4 h-4 text-blue-400 shrink-0" />
-          {!isCollapsed && <span className="truncate">Face Scan Gate</span>}
-        </button>
+        {/* ======================================================== */}
+        {/* FAST FINDINGS / INSTANT TASKS RAIL                       */}
+        {/* ======================================================== */}
+        {!isCollapsed && (
+          <div className="pt-3 border-t border-red-500/15 space-y-2">
+            <div className="px-2.5 flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                Instant Tasks
+              </span>
+            </div>
+
+            <div className="space-y-1">
+              {/* Task 1: Live Face Scan Gate */}
+              <button
+                onClick={() => {
+                  setIsFaceScanGateModalOpen(true);
+                  onCloseMobileDrawer();
+                }}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold bg-red-600/15 hover:bg-red-600/25 border border-red-500/30 text-white transition-all text-left cursor-pointer"
+                title="Launch Live Gate Camera"
+              >
+                <Scan className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="truncate">Face Scan Gate</span>
+              </button>
+
+              {/* Task 2: Rapid Check-in */}
+              <button
+                onClick={() => {
+                  setIsRapidGateModalOpen(true);
+                  onCloseMobileDrawer();
+                }}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.05] border border-white/[0.05] transition-all text-left cursor-pointer"
+                title="Input Student ID or Pass Token"
+              >
+                <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="truncate">Rapid QR / ID</span>
+              </button>
+
+              {/* Task 3: Create New Event */}
+              <button
+                onClick={() => {
+                  setEventToEdit(null);
+                  setIsEventFormModalOpen(true);
+                  onCloseMobileDrawer();
+                }}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.05] border border-white/[0.05] transition-all text-left cursor-pointer"
+                title="Create a New Event"
+              >
+                <Plus className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                <span className="truncate">Create Event</span>
+              </button>
+
+              {/* Task 4: Export CSV Roster */}
+              <button
+                onClick={() => {
+                  exportAttendeesCsv();
+                  onCloseMobileDrawer();
+                }}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.05] border border-white/[0.05] transition-all text-left cursor-pointer"
+                title="Export Attendee Attendance CSV"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="truncate">Export CSV</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Bottom system status */}
+      {/* Bottom Gate Terminal Status */}
       {!isCollapsed && (
-        <div className="pt-4 border-t border-white/[0.06] px-2.5">
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.04] p-3 text-left">
-            <div className="flex items-center gap-2 mb-1">
+        <div className="pt-4 border-t border-red-500/15 px-2">
+          <div className="rounded-xl bg-black/40 dark:bg-[#151119] border border-red-500/20 p-2.5 text-left">
+            <div className="flex items-center gap-2 mb-0.5">
               <Radio className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-[11px] font-semibold text-slate-200">
-                Gateway 04 Active
+              <span className="text-[11px] font-bold text-white">
+                Terminal Online
               </span>
             </div>
             <p className="text-[10px] text-slate-400 leading-tight">
-              Sub-second QR sync & localized proximity validation
+              Real-time gate sync & biometric verification active
             </p>
           </div>
         </div>
@@ -174,37 +237,35 @@ export function Sidebar({
     <>
       {/* DESKTOP SIDEBAR */}
       <aside
-        className={`hidden lg:block shrink-0 rounded-2xl glass-panel-subtle transition-all duration-300 ${
-          isCollapsed ? 'w-16' : 'w-56'
+        className={`hidden lg:block shrink-0 rounded-2xl glass-panel-subtle transition-all duration-300 border-2 border-red-500/30 shadow-xl ${
+          isCollapsed ? 'w-16' : 'w-60'
         }`}
       >
         {sidebarContent}
       </aside>
 
-      {/* MOBILE DRAWER (Framer Motion slide-in) */}
+      {/* MOBILE DRAWER */}
       <AnimatePresence>
         {isMobileDrawerOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onCloseMobileDrawer}
-              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
             />
 
-            {/* Sliding Drawer */}
             <motion.div
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 280 }}
-              className="relative w-72 max-w-[80vw] h-full bg-[#0E1524] border-r border-white/[0.1] shadow-2xl flex flex-col"
+              className="relative w-72 max-w-[80vw] h-full bg-[#120F16] border-r border-red-500/30 shadow-2xl flex flex-col"
             >
-              <div className="flex items-center justify-between p-4 border-b border-white/[0.08]">
-                <span className="text-xs font-bold uppercase tracking-wider text-white">
-                  Event Operations
+              <div className="flex items-center justify-between p-4 border-b border-red-500/20">
+                <span className="text-xs font-black uppercase tracking-wider text-white">
+                  Gate Operations
                 </span>
                 <button
                   onClick={onCloseMobileDrawer}

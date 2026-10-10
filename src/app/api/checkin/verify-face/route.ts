@@ -188,10 +188,36 @@ export async function POST(req: NextRequest) {
     // Biometric match validation
     if (!bestMatch) {
       recordFailedScan(rateLimitKey);
+
+      let specificReason = 'User Not Registered';
+      let notRegistered = true;
+
+      if (presentedEnrollmentNo) {
+        const cleanPresented = presentedEnrollmentNo.trim().toUpperCase();
+        const studentRecord = await User.findOne({
+          role: 'student',
+          $or: [
+            { enrollmentNo: new RegExp(`^${cleanPresented}$`, 'i') },
+            { name: new RegExp(cleanPresented, 'i') },
+          ],
+        });
+
+        if (!studentRecord) {
+          specificReason = 'User Not Registered: No student record found in database.';
+        } else if (!studentRecord.faceEmbedding || studentRecord.faceEmbedding.length === 0) {
+          specificReason = `User Not Registered: ${studentRecord.name} has not registered face biometrics.`;
+        } else {
+          specificReason = `Face does not match registered profile (${studentRecord.name}).`;
+          notRegistered = false;
+        }
+      } else {
+        specificReason = 'User Not Registered: Face biometric not found in registered attendee directory.';
+      }
+
       await CheckIn.create({
         eventId: event._id,
         result: 'denied',
-        reason: 'Face not recognised',
+        reason: specificReason,
         method: 'face',
         timestamp: new Date(),
         expiresAt: eventTTL,
@@ -200,7 +226,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         verified: false,
-        reason: 'Face not recognised',
+        notRegistered,
+        reason: specificReason,
         similarity: highestSimilarity.toFixed(2),
         distance: lowestDistance.toFixed(2),
       });

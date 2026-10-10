@@ -317,20 +317,20 @@ export function StudentFaceEnrollModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-lg rounded-3xl glass-panel border border-white/[0.14] p-6 sm:p-7 shadow-2xl bg-[#0C1220]/95 z-10 overflow-hidden"
+            className="relative w-full max-w-lg rounded-3xl glass-panel border border-red-500/30 p-6 sm:p-7 shadow-2xl bg-[#151119]/98 z-10 overflow-hidden"
           >
             {/* Top Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-5">
+            <div className="flex items-center justify-between pb-4 border-b border-red-500/20 mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                  <ShieldCheck className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-400">
+                  <ShieldCheck className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white tracking-tight">
-                    {isUpdateMode ? 'Update Face Scan Biometric' : 'First-Time Biometric Face Enrollment'}
+                  <h3 className="text-base font-black text-white tracking-tight">
+                    {isUpdateMode ? 'Update Face Biometric ID' : 'Face Biometric ID Setup'}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Zero-storage privacy architecture · Vector embedding only
+                    Privacy-first verification · Photos are never saved
                   </p>
                 </div>
               </div>
@@ -488,19 +488,19 @@ export function StudentFaceEnrollModal({
               className={`w-full py-3.5 px-4 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-lg ${
                 isProcessing || !consentAccepted
                   ? 'bg-white/[0.05] text-slate-500 border border-white/[0.05] cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-900/40'
+                  : 'bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white shadow-red-950/50 font-bold cursor-pointer'
               }`}
             >
               {isProcessing ? (
                 <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                  <span>Computing & Enrolling Biometric Vector...</span>
+                  <RefreshCw className="w-4 h-4 animate-spin text-amber-400" />
+                  <span>Setting Up Face Biometric ID...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4 text-amber-400" />
                   <span>
-                    {isUpdateMode ? 'Update Biometric Credentials' : 'Enroll Biometric Face Scan'}
+                    {isUpdateMode ? 'Update Face Biometric ID' : 'Enroll Face Biometric ID'}
                   </span>
                 </>
               )}

@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Search, Download, RefreshCw, UserCheck } from 'lucide-react';
+import { Search, Download, RefreshCw, X, ShieldCheck } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
 
 export function AttendeesTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [attendees, setAttendees] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { selectedEvent, exportAttendeesCsv, token } = useEventSystem();
+  const { selectedEvent, exportAttendeesCsv, token, managementSearch, setManagementSearch } = useEventSystem();
 
   const fetchAttendees = async () => {
     if (!selectedEvent?.id) return;
@@ -35,87 +35,105 @@ export function AttendeesTab() {
     fetchAttendees();
   }, [selectedEvent?.id]);
 
+  const activeSearch = searchTerm || managementSearch;
+
   const filtered = attendees.filter(
     (a) =>
-      a.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.dept?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.ticket?.toLowerCase().includes(searchTerm.toLowerCase())
+      !activeSearch ||
+      a.name?.toLowerCase().includes(activeSearch.toLowerCase()) ||
+      a.studentId?.toLowerCase().includes(activeSearch.toLowerCase()) ||
+      a.dept?.toLowerCase().includes(activeSearch.toLowerCase()) ||
+      a.ticket?.toLowerCase().includes(activeSearch.toLowerCase())
   );
 
   return (
-    <div className="rounded-2xl glass-panel p-5 sm:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06] mb-5">
+    <div className="rounded-2xl glass-panel p-5 sm:p-6 border-2 border-red-500/30 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-2 border-red-500/25 mb-5">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-white tracking-tight">Attendee Directory</h2>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              {filtered.length} Attendees
+            <h2 className="text-lg font-black text-white tracking-tight">Attendee Roster</h2>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-red-600/20 text-red-400 border border-red-500/30 font-bold">
+              {filtered.length} Registered
             </span>
           </div>
-          <p className="text-xs text-slate-400">
-            {selectedEvent?.name || 'Selected Event'} · Real-time pass roster and check-in statuses
+          <p className="text-xs text-slate-400 mt-0.5">
+            {selectedEvent?.name || 'Selected Event'} · Attendance list & live gate status
           </p>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Search bar inside tab */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
-              placeholder="Search name, ID, or ticket..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/50 w-52 sm:w-64"
+              placeholder="Filter roster..."
+              className="pl-8 pr-7 py-1.5 rounded-xl bg-white/[0.05] border border-red-500/30 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-red-500 w-40 sm:w-56"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-slate-400 hover:text-white"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
 
           <button
             onClick={fetchAttendees}
+            disabled={isLoading}
+            className="p-2 rounded-xl bg-white/[0.05] border border-red-500/25 hover:bg-white/[0.1] text-slate-300 transition-colors cursor-pointer"
             title="Refresh Roster"
-            className="p-2 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-400 hover:text-white transition-colors"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-amber-400' : ''}`} />
           </button>
 
           <button
             onClick={exportAttendeesCsv}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-xs font-medium text-slate-300 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-xs font-bold text-white shadow-md shadow-red-950/40 transition-all cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Export CSV</span>
+            <span>Export CSV</span>
           </button>
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+      {/* Roster Table */}
+      <div className="overflow-x-auto rounded-xl border border-red-500/25 bg-black/30">
+        <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="border-b border-white/[0.06] text-slate-400 font-semibold uppercase tracking-wider text-[10px]">
-              <th className="pb-3 pl-2">Attendee Name</th>
-              <th className="pb-3">Enrollment ID</th>
-              <th className="pb-3">Department</th>
-              <th className="pb-3">Ticket Ref</th>
-              <th className="pb-3">Seat Tier</th>
-              <th className="pb-3 pr-2 text-right">Status</th>
+            <tr className="border-b-2 border-red-500/25 bg-red-600/[0.08] text-slate-300 font-bold uppercase tracking-wider text-[10px]">
+              <th className="py-3 px-3.5">Attendee</th>
+              <th className="py-3 px-3.5">Student ID</th>
+              <th className="py-3 px-3.5">Department</th>
+              <th className="py-3 px-3.5">Ticket ID</th>
+              <th className="py-3 px-3.5">Gate Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.04]">
+          <tbody className="divide-y divide-red-500/15">
             {filtered.map((att) => (
-              <tr key={att.id} className="hover:bg-white/[0.02] transition-colors">
-                <td className="py-3 pl-2 font-semibold text-white">{att.name}</td>
-                <td className="py-3 text-slate-400 font-mono text-[11px]">{att.studentId}</td>
-                <td className="py-3 text-slate-300">{att.dept}</td>
-                <td className="py-3 font-mono text-blue-300 text-[11px]">{att.ticket}</td>
-                <td className="py-3 text-slate-400">{att.tier}</td>
-                <td className="py-3 pr-2 text-right">
+              <tr key={att.id || att.ticket} className="hover:bg-red-500/[0.04] transition-colors">
+                <td className="py-3 px-3 font-semibold text-white">
+                  {att.name}
+                </td>
+                <td className="py-3 px-3 font-mono text-amber-400 font-medium">
+                  {att.studentId}
+                </td>
+                <td className="py-3 px-3 text-slate-400">
+                  {att.dept}
+                </td>
+                <td className="py-3 px-3 font-mono text-slate-300 text-[11px]">
+                  {att.ticket}
+                </td>
+                <td className="py-3 px-3">
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
-                      att.status === 'Checked In'
-                        ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20'
-                        : att.status === 'Flagged'
-                        ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
-                        : 'bg-blue-500/15 text-blue-400 border border-blue-500/20'
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      att.status === 'Confirmed' || att.status === 'verified'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-amber-500/15 text-amber-300 border border-amber-500/25'
                     }`}
                   >
                     {att.status}
@@ -126,8 +144,8 @@ export function AttendeesTab() {
 
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-slate-400">
-                  {isLoading ? 'Loading attendee roster...' : 'No attendees found for this event.'}
+                <td colSpan={5} className="py-8 text-center text-slate-400">
+                  {isLoading ? 'Loading roster from database...' : 'No attendees found matching search.'}
                 </td>
               </tr>
             )}

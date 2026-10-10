@@ -7,14 +7,9 @@ import {
   AlertTriangle,
   Clock,
   Search,
-  Filter,
-  ShieldAlert,
-  Smartphone,
-  ExternalLink,
   Scan,
 } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
-import { CheckInRecord } from '@/lib/types';
 
 export function LiveCheckInFeed() {
   const { checkIns, setIsFaceScanGateModalOpen } = useEventSystem();
@@ -36,18 +31,18 @@ export function LiveCheckInFeed() {
   });
 
   return (
-    <div className="rounded-2xl glass-panel p-5 sm:p-6 flex flex-col h-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/[0.06]">
+    <div className="rounded-2xl glass-panel p-5 sm:p-6 flex flex-col h-full border-2 border-red-500/30 shadow-xl">
+      {/* Header with crisp divider line */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b-2 border-red-500/25">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">
-              Live Check-ins
+            <h2 className="text-base sm:text-lg font-black tracking-tight text-white">
+              Live Gate Stream
             </h2>
             <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
           </div>
           <p className="text-xs text-slate-400 mt-0.5">
-            Real-time verification activity
+            Real-time gate check-ins and security approvals
           </p>
         </div>
 
@@ -55,30 +50,30 @@ export function LiveCheckInFeed() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsFaceScanGateModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-600/25 hover:bg-blue-600/35 border border-blue-500/35 text-xs font-semibold text-blue-300 hover:text-white transition-all shadow-sm"
-            title="Launch Face Scan Entry Screen"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-xs font-bold text-white transition-all shadow-md shadow-red-950/40 cursor-pointer"
+            title="Launch Face Scan Gate Terminal"
           >
-            <Scan className="w-3.5 h-3.5" />
-            <span>Face Scan</span>
+            <Scan className="w-3.5 h-3.5 text-amber-400" />
+            <span>Face Gate</span>
           </button>
 
           <div className="relative">
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search attendee or ticket..."
+              placeholder="Filter feed..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/50 w-36 sm:w-48 transition-all"
+              className="pl-8 pr-3 py-1.5 rounded-xl bg-white/[0.04] border border-red-500/20 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-red-500 w-32 sm:w-44 transition-all"
             />
           </div>
 
-          <div className="flex items-center bg-[#111A2E] p-1 rounded-xl border border-white/[0.06] text-xs">
+          <div className="flex items-center bg-black/40 p-1 rounded-xl border border-red-500/20 text-xs">
             <button
               onClick={() => setFilter('all')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
                 filter === 'all'
-                  ? 'bg-blue-600 text-white font-semibold'
+                  ? 'bg-red-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -86,9 +81,9 @@ export function LiveCheckInFeed() {
             </button>
             <button
               onClick={() => setFilter('verified')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
                 filter === 'verified'
-                  ? 'bg-emerald-600 text-white font-semibold'
+                  ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -96,9 +91,9 @@ export function LiveCheckInFeed() {
             </button>
             <button
               onClick={() => setFilter('flagged')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
                 filter === 'flagged'
-                  ? 'bg-rose-600 text-white font-semibold'
+                  ? 'bg-rose-700 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -118,14 +113,14 @@ export function LiveCheckInFeed() {
               <motion.div
                 key={item.id}
                 layout
-                initial={{ opacity: 0, x: -25, scale: 0.98 }}
+                initial={{ opacity: 0, x: -20, scale: 0.98 }}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: 'spring', damping: 22, stiffness: 300 }}
                 className={`p-3.5 rounded-xl border transition-colors flex items-center justify-between gap-3 ${
                   isVerified
                     ? 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
-                    : 'bg-rose-500/[0.05] border-rose-500/25 hover:bg-rose-500/[0.08]'
+                    : 'bg-red-950/20 border-red-500/30 hover:bg-red-950/30'
                 }`}
               >
                 {/* Left Info */}
@@ -134,7 +129,7 @@ export function LiveCheckInFeed() {
                     className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
                       isVerified
                         ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
-                        : 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+                        : 'bg-red-500/20 border-red-500/40 text-red-400'
                     }`}
                   >
                     {isVerified ? (
@@ -146,10 +141,10 @@ export function LiveCheckInFeed() {
 
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white tracking-tight truncate">
+                      <span className="text-sm font-bold text-white tracking-tight truncate">
                         {item.name}
                       </span>
-                      <span className="font-mono text-[11px] text-slate-400 truncate">
+                      <span className="font-mono text-[11px] text-amber-400 font-semibold truncate">
                         {item.ticketId}
                       </span>
                     </div>
@@ -162,7 +157,7 @@ export function LiveCheckInFeed() {
                       {item.reason && (
                         <>
                           <span>·</span>
-                          <span className="text-rose-300 font-medium">
+                          <span className="text-rose-400 font-medium">
                             {item.reason}
                           </span>
                         </>
@@ -174,11 +169,11 @@ export function LiveCheckInFeed() {
                 {/* Right Badge Status */}
                 <div className="shrink-0 text-right">
                   {isVerified ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      ✓ Verified
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      ✓ Approved
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-600/20 text-red-300 border border-red-500/40">
                       ⚠ Flagged
                     </span>
                   )}
@@ -190,7 +185,7 @@ export function LiveCheckInFeed() {
 
         {filteredRecords.length === 0 && (
           <div className="py-12 text-center text-slate-400 text-xs">
-            No check-in records matching the current criteria.
+            No gate check-in logs recorded yet.
           </div>
         )}
       </div>

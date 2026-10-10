@@ -22,11 +22,22 @@ import {
   INITIAL_SECURITY_SETTINGS,
   INITIAL_SECURITY_ACTIVITY,
 } from '@/lib/mockData';
+import { getEventImage } from '@/lib/eventImages';
 
 interface EventSystemContextType {
   // Navigation & View
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
+
+  // Theme & Appearance (Money Heist Dark / Light)
+  theme: 'dark' | 'light';
+  toggleTheme: () => void;
+
+  // Search Bars
+  studentSearch: string;
+  setStudentSearch: (q: string) => void;
+  managementSearch: string;
+  setManagementSearch: (q: string) => void;
 
   // Auth & Profile
   currentUser: AuthUserData | null;
@@ -116,6 +127,36 @@ const EventSystemContext = createContext<EventSystemContextType | undefined>(und
 
 export function EventSystemProvider({ children }: { children: React.ReactNode }) {
   const [viewMode, setViewModeState] = useState<ViewMode>('student');
+
+  // Theme state: dark (default Money Heist vault) or light (Royal Mint marble)
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  // Global search filters
+  const [studentSearch, setStudentSearch] = useState<string>('');
+  const [managementSearch, setManagementSearch] = useState<string>('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = (localStorage.getItem('eventra_theme') as 'dark' | 'light') || 'dark';
+      setTheme(savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+      document.documentElement.classList.toggle('light', savedTheme === 'light');
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('eventra_theme', next);
+        document.documentElement.setAttribute('data-theme', next);
+        document.documentElement.classList.toggle('dark', next === 'dark');
+        document.documentElement.classList.toggle('light', next === 'light');
+      }
+      return next;
+    });
+  }, []);
 
   // Auth User state: NULL by default - NO fake defaults!
   const [currentUser, setCurrentUser] = useState<AuthUserData | null>(null);
@@ -246,15 +287,19 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
       const res = await fetch('/api/events');
       const data = await res.json();
       if (data.success && Array.isArray(data.events) && data.events.length > 0) {
-        setEvents(data.events);
+        const enrichedEvents = data.events.map((e: EventItem) => ({
+          ...e,
+          imageUrl: e.imageUrl || getEventImage(e),
+        }));
+        setEvents(enrichedEvents);
 
         // Keep current selected event updated or select first
         setSelectedEvent((prev) => {
           if (prev) {
-            const match = data.events.find((e: EventItem) => e.id === prev.id);
+            const match = enrichedEvents.find((e: EventItem) => e.id === prev.id);
             if (match) return match;
           }
-          return data.events[0];
+          return enrichedEvents[0];
         });
 
         // Compute real total registered & checked-in across all events
@@ -706,6 +751,12 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
       value={{
         viewMode,
         setViewMode,
+        theme,
+        toggleTheme,
+        studentSearch,
+        setStudentSearch,
+        managementSearch,
+        setManagementSearch,
         currentUser,
         token,
         loginUser,

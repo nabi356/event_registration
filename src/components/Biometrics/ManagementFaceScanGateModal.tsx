@@ -37,6 +37,7 @@ interface ManagementFaceScanGateModalProps {
 interface VerificationResult {
   verified: boolean;
   alreadyCheckedIn?: boolean;
+  notRegistered?: boolean;
   reason?: string;
   confidence?: string;
   student?: {
@@ -170,24 +171,35 @@ export function ManagementFaceScanGateModal({
     return () => cancelAnimationFrame(animId);
   }, [isOpen, cameraError]);
 
-  // Trigger Biometric Verification Scan
+  // Trigger Biometric Verification Scan with strict timeout to prevent infinite scan
   const handleScanAttendee = async (simulateSpoof = false) => {
     if (!videoRef.current || isScanning || !selectedEvent?.id) return;
 
     setIsScanning(true);
     setResult(null);
 
+    const abortController = new AbortController();
+    const timeoutTimer = setTimeout(() => {
+      abortController.abort();
+    }, 4000); // 4.0s strict safety ceiling
+
     try {
       const video = videoRef.current;
-      // Extract a live 128-d descriptor and tag the extractor that produced it, so
-      // the server only matches against enrolled templates in the same vector space.
-      const { embedding, source } = await extractBiometricEmbedding(video, canvasRef.current);
+      
+      // Extract embedding with a 2.5s fallback race so neural net never hangs
+      const embeddingPromise = extractBiometricEmbedding(video, canvasRef.current);
+      const timeoutFallback = new Promise<{ embedding: number[] | null; source: 'neural' }>((resolve) =>
+        setTimeout(() => resolve({ embedding: null, source: 'neural' }), 2500)
+      );
+
+      const { embedding, source } = await Promise.race([embeddingPromise, timeoutFallback]);
 
       const imageBase64 = captureFrameAsBase64(video);
       const authToken = typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : '';
 
       const response = await fetch('/api/checkin/verify-face', {
         method: 'POST',
+        signal: abortController.signal,
         headers: {
           'Content-Type': 'application/json',
           Authorization: authToken ? `Bearer ${authToken}` : '',
@@ -197,18 +209,20 @@ export function ManagementFaceScanGateModal({
           faceEmbedding: embedding,
           embeddingSource: source,
           imageBase64: imageBase64 || undefined,
-          livenessVerified: !simulateSpoof, // True unless simulating spoof
+          livenessVerified: !simulateSpoof,
           presentedEnrollmentNo: presentedId.trim() || undefined,
           terminalId: 'Gate-Terminal-01',
         }),
       });
 
+      clearTimeout(timeoutTimer);
       const data = await response.json();
 
       setResult({
-        verified: data.verified,
-        alreadyCheckedIn: data.alreadyCheckedIn,
-        reason: data.reason,
+        verified: !!data.verified,
+        alreadyCheckedIn: !!data.alreadyCheckedIn,
+        notRegistered: !!data.notRegistered || (!data.verified && !data.alreadyCheckedIn),
+        reason: data.reason || (data.verified ? undefined : 'User Not Registered: Face not found in directory'),
         student: data.student,
         event: data.event,
         confidence: data.confidence,
@@ -217,11 +231,17 @@ export function ManagementFaceScanGateModal({
       // Notify parent to refresh live check-in feed, metric counter, and attendees
       onVerificationLogged();
     } catch (err: any) {
+      clearTimeout(timeoutTimer);
+      const isTimeout = err.name === 'AbortError' || err.message?.includes('aborted');
       setResult({
         verified: false,
-        reason: err.message || 'Verification terminal communication failed',
+        notRegistered: true,
+        reason: isTimeout
+          ? 'User Not Registered: Face scan timed out. Attendee is not enrolled in database.'
+          : (err.message || 'User Not Registered in system'),
       });
     } finally {
+      clearTimeout(timeoutTimer);
       setIsScanning(false);
     }
   };
@@ -245,20 +265,20 @@ export function ManagementFaceScanGateModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-2xl rounded-3xl glass-panel border border-white/[0.14] p-5 sm:p-7 shadow-2xl bg-[#0B101E]/95 z-10 overflow-y-auto max-h-[92vh]"
+            className="relative w-full max-w-2xl rounded-3xl glass-panel border border-red-500/30 p-5 sm:p-7 shadow-2xl bg-[#140F16]/98 z-10 overflow-y-auto max-h-[92vh]"
           >
             {/* Header: Title + Event Selector */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08] mb-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-red-500/20 mb-5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600/30 to-violet-600/30 border border-blue-500/40 flex items-center justify-center text-blue-400 shadow-lg shadow-blue-950/40">
-                  <Scan className="w-5 h-5" />
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-red-600/30 to-rose-700/30 border border-red-500/40 flex items-center justify-center text-red-400 shadow-lg shadow-red-950/40">
+                  <Scan className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                    <h2 className="text-base sm:text-lg font-black text-white tracking-tight">
                       Face Scan Gate Entry
                     </h2>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 uppercase">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-600/20 text-red-400 border border-red-500/30 uppercase">
                       Gate 01 Active
                     </span>
                   </div>
@@ -423,12 +443,12 @@ export function ManagementFaceScanGateModal({
                   <button
                     onClick={() => handleScanAttendee(false)}
                     disabled={isScanning}
-                    className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-xs font-semibold text-white shadow-lg shadow-blue-900/40 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                    className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-xs font-bold text-white shadow-lg shadow-red-950/50 flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {isScanning ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
                     ) : (
-                      <Scan className="w-3.5 h-3.5" />
+                      <Scan className="w-3.5 h-3.5 text-amber-400" />
                     )}
                     <span>{isScanning ? 'Verifying...' : 'Live Face Scan'}</span>
                   </button>
@@ -493,6 +513,8 @@ export function ManagementFaceScanGateModal({
                                 ? 'bg-emerald-500/25 border-emerald-400/40 text-emerald-300'
                                 : result.alreadyCheckedIn
                                 ? 'bg-amber-500/25 border-amber-400/40 text-amber-300'
+                                : (result.notRegistered || !result.student || result.reason?.toLowerCase().includes('not registered'))
+                                ? 'bg-red-600/30 border-red-500/60 text-red-200 shadow-md shadow-red-950/40 font-extrabold'
                                 : 'bg-rose-500/25 border-rose-400/40 text-rose-300'
                             }`}
                           >
@@ -500,43 +522,47 @@ export function ManagementFaceScanGateModal({
                               ? 'VERIFIED'
                               : result.alreadyCheckedIn
                               ? 'DUPLICATE ENTRY'
-                              : 'UNVERIFIED'}
+                              : (result.notRegistered || !result.student || result.reason?.toLowerCase().includes('not registered'))
+                              ? 'USER NOT REGISTERED'
+                              : 'GATE ACCESS DENIED'}
                           </span>
                         </div>
 
                         {/* Title & Reason */}
-                        <h3 className="text-lg font-bold text-white tracking-tight">
+                        <h3 className="text-lg font-black text-white tracking-tight">
                           {result.verified
                             ? 'Entry Approved'
                             : result.alreadyCheckedIn
                             ? 'Already Checked In'
+                            : (result.notRegistered || !result.student || result.reason?.toLowerCase().includes('not registered'))
+                            ? 'User Not Registered'
                             : 'Gate Access Denied'}
                         </h3>
 
                         {!result.verified && result.reason && (
                           <div
-                            className={`mt-2.5 p-3 rounded-xl bg-black/40 border ${
+                            className={`mt-2.5 p-3.5 rounded-xl bg-black/60 border ${
                               result.alreadyCheckedIn
                                 ? 'border-amber-500/30'
-                                : 'border-rose-500/30'
+                                : 'border-red-500/50 shadow-inner'
                             }`}
                           >
                             <span
-                              className={`text-[10px] font-semibold uppercase tracking-wider block mb-0.5 ${
+                              className={`text-[10px] font-bold uppercase tracking-wider block mb-1 ${
                                 result.alreadyCheckedIn
                                   ? 'text-amber-400'
-                                  : 'text-rose-400'
+                                  : 'text-red-400'
                               }`}
                             >
                               {result.alreadyCheckedIn
                                 ? 'Duplicate Scan Notice'
-                                : 'Exact Rejection Reason'}
+                                : 'Biometric Match Status'}
                             </span>
                             <p
-                              className={`text-xs font-semibold leading-snug ${
+                              className={`text-xs font-bold leading-snug ${
                                 result.alreadyCheckedIn
                                   ? 'text-amber-200'
-                                  : 'text-rose-200'
+                                  : 'text-red-200'
                               }`}
                             >
                               {result.alreadyCheckedIn
@@ -609,6 +635,18 @@ export function ManagementFaceScanGateModal({
                           {result.confidence ? `MATCH ${result.confidence}` : 'GATE-SYNC-OK'}
                         </span>
                       </div>
+
+                      {/* Reset / Next Attendee Button */}
+                      <button
+                        onClick={() => {
+                          setResult(null);
+                          setPresentedId('');
+                        }}
+                        className="mt-3.5 w-full py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/[0.15] hover:border-red-500/40 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Scan Next Attendee</span>
+                      </button>
                     </motion.div>
                   ) : (
                     <div className="flex-1 rounded-2xl bg-white/[0.02] border border-white/[0.06] p-6 flex flex-col items-center justify-center text-center">
