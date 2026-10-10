@@ -170,17 +170,17 @@ export function Sidebar({
                 <span className="truncate">Face Scan Gate</span>
               </button>
 
-              {/* Task 2: Rapid Check-in */}
+              {/* Task 2: Optical QR Pass Scanner */}
               <button
                 onClick={() => {
                   setIsRapidGateModalOpen(true);
                   onCloseMobileDrawer();
                 }}
-                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.05] border border-white/[0.05] transition-all text-left cursor-pointer"
-                title="Input Student ID or Pass Token"
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-bold text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all text-left cursor-pointer"
+                title="Optical QR Scanner (Verify Real vs Fake Pass)"
               >
-                <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="truncate">Rapid QR / ID</span>
+                <QrCode className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="truncate">QR Scanner (Real/Fake)</span>
               </button>
 
               {/* Task 3: Create New Event */}

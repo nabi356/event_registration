@@ -103,15 +103,15 @@ export default function UnifiedGatewayPage() {
     <div className="min-h-screen bg-transparent flex flex-col justify-between relative selection:bg-red-600/30 selection:text-white overflow-x-hidden transition-colors duration-300">
 
       {/* Top Header */}
-      <header className="relative z-10 w-full border-b border-red-500/20 bg-black/60 dark:bg-[#0B0A0E]/80 backdrop-blur-xl">
+      <header className="relative z-10 w-full border-b border-red-500/20 bg-white/95 dark:bg-[#0B0A0E]/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-600 via-rose-700 to-red-800 border border-red-500/40 flex items-center justify-center text-white shadow-lg shadow-red-950/50">
               <Shield className="w-5 h-5 text-amber-400 fill-amber-400/20" />
             </div>
             <div>
-              <span className="text-white font-black text-lg tracking-wider uppercase">Eventra</span>
-              <span className="text-[11px] text-amber-400/90 block leading-none mt-0.5 font-medium">
+              <span className="text-black dark:text-white font-black text-lg tracking-wider uppercase">Eventra</span>
+              <span className="text-[11px] text-amber-600 dark:text-amber-400 block leading-none mt-0.5 font-bold">
                 Campus Events & Biometric Gate Passes
               </span>
             </div>
@@ -121,7 +121,7 @@ export default function UnifiedGatewayPage() {
             {/* Dark / Light Mode Switcher */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-red-500/20 text-amber-400 transition-all cursor-pointer"
+              className="p-2 rounded-xl bg-black/5 dark:bg-white/[0.05] hover:bg-black/10 dark:hover:bg-white/[0.1] border border-red-500/20 text-amber-600 dark:text-amber-400 transition-all cursor-pointer"
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               aria-label="Toggle theme"
             >
@@ -134,13 +134,13 @@ export default function UnifiedGatewayPage() {
 
             <button
               onClick={() => router.push('/student')}
-              className="text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/[0.05] transition-colors"
+              className="text-xs text-slate-700 dark:text-slate-300 hover:text-black dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/[0.05] transition-colors font-medium"
             >
               Student Portal
             </button>
             <button
               onClick={() => router.push('/management')}
-              className="text-xs text-amber-400 hover:text-amber-300 px-3 py-1.5 rounded-lg hover:bg-white/[0.05] transition-colors font-semibold"
+              className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-500 px-3 py-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/[0.05] transition-colors font-bold"
             >
               Management Portal
             </button>
@@ -155,17 +155,17 @@ export default function UnifiedGatewayPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="rounded-3xl glass-panel border border-red-500/25 p-8 text-center bg-[#151119]/95 shadow-2xl"
+              className="rounded-3xl glass-panel border-2 border-red-500/30 p-8 text-center bg-white/95 dark:bg-[#151119]/95 shadow-2xl"
             >
-              <div className="w-14 h-14 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-amber-400 mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-amber-500 dark:text-amber-400 mx-auto mb-4">
                 <Shield className="w-7 h-7" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-1">
+              <h2 className="text-xl font-black text-black dark:text-white mb-1">
                 Welcome back, {currentUser.name}!
               </h2>
-              <p className="text-xs text-slate-400 mb-6">
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-6">
                 You are signed in as{' '}
-                <span className="font-bold text-amber-400 uppercase tracking-wide">
+                <span className="font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
                   {currentUser.role}
                 </span>
                 . Entering your portal...
@@ -185,7 +185,7 @@ export default function UnifiedGatewayPage() {
                 </button>
                 <button
                   onClick={() => logoutUser()}
-                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white/[0.04] hover:bg-rose-500/15 border border-white/[0.08] text-slate-300 hover:text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-100 hover:bg-rose-50 dark:bg-white/[0.04] dark:hover:bg-rose-500/15 border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-300 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Switch User</span>
@@ -197,18 +197,18 @@ export default function UnifiedGatewayPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="rounded-3xl glass-panel border border-red-500/25 p-6 sm:p-8 bg-[#151119]/95 shadow-2xl backdrop-blur-2xl"
+              className="rounded-3xl glass-panel border-2 border-red-500/30 p-6 sm:p-8 bg-white/95 dark:bg-[#151119]/95 shadow-2xl backdrop-blur-2xl"
             >
               {/* Header */}
               <div className="text-center mb-6">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/15 border border-red-500/30 text-amber-400 text-xs font-bold mb-3">
-                  <Sparkles className="w-3.5 h-3.5" />
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/15 border border-red-500/30 text-amber-600 dark:text-amber-400 text-xs font-bold mb-3">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>Eventra Gateway · Two Dedicated Portals</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-black text-black dark:text-white tracking-tight">
                   {tab === 'signup' ? 'Create Your Account' : 'Account Sign In'}
                 </h1>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 max-w-sm mx-auto font-medium">
                   {tab === 'signup'
                     ? 'Students access event passes; Management accesses operations & gate scanner.'
                     : 'Sign in to access your digital passes or gate terminal controls.'}
@@ -216,7 +216,7 @@ export default function UnifiedGatewayPage() {
               </div>
 
               {/* Tabs Switcher: Sign Up vs Sign In */}
-              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-black/40 border border-red-500/20 mb-6 text-xs font-bold">
+              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-red-500/20 mb-6 text-xs font-bold">
                 <button
                   type="button"
                   onClick={() => {
@@ -226,7 +226,7 @@ export default function UnifiedGatewayPage() {
                   className={`py-2.5 rounded-xl transition-all cursor-pointer ${
                     tab === 'signup'
                       ? 'bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-950/40 font-bold'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   Register Account
@@ -240,7 +240,7 @@ export default function UnifiedGatewayPage() {
                   className={`py-2.5 rounded-xl transition-all cursor-pointer ${
                     tab === 'login'
                       ? 'bg-gradient-to-r from-red-600 to-rose-700 text-white shadow-md shadow-red-950/40 font-bold'
-                      : 'text-slate-400 hover:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   Sign In
@@ -260,7 +260,7 @@ export default function UnifiedGatewayPage() {
                 {/* ROLE SELECTOR (SIGN UP ONLY) */}
                 {tab === 'signup' && (
                   <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 block mb-2">
                       Select Your Role
                     </label>
                     <div className="grid grid-cols-2 gap-3">
@@ -269,8 +269,8 @@ export default function UnifiedGatewayPage() {
                         onClick={() => setRole('student')}
                         className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                           role === 'student'
-                            ? 'bg-red-600/15 border-red-500 shadow-md shadow-red-950/40'
-                            : 'bg-white/[0.02] border-white/[0.08] hover:border-red-500/30'
+                            ? 'bg-red-500/10 border-red-500 shadow-md ring-1 ring-red-500/30'
+                            : 'bg-slate-50 hover:bg-slate-100 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border-slate-200 dark:border-white/[0.08] hover:border-red-500/30'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -278,18 +278,18 @@ export default function UnifiedGatewayPage() {
                             className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                               role === 'student'
                                 ? 'bg-red-600 text-white'
-                                : 'bg-white/[0.05] text-slate-400'
+                                : 'bg-slate-200 dark:bg-white/[0.05] text-slate-700 dark:text-slate-400'
                             }`}
                           >
                             <GraduationCap className="w-4 h-4" />
                           </div>
                           {role === 'student' && (
-                            <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                            <CheckCircle2 className="w-4 h-4 text-amber-500" />
                           )}
                         </div>
                         <div>
-                          <div className="font-bold text-white text-sm">Student</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">
+                          <div className="font-bold text-black dark:text-white text-sm">Student</div>
+                          <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">
                             Passes, Face ID & registered events
                           </div>
                         </div>
@@ -300,8 +300,8 @@ export default function UnifiedGatewayPage() {
                         onClick={() => setRole('management')}
                         className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
                           role === 'management'
-                            ? 'bg-red-600/15 border-red-500 shadow-md shadow-red-950/40'
-                            : 'bg-white/[0.02] border-white/[0.08] hover:border-red-500/30'
+                            ? 'bg-red-500/10 border-red-500 shadow-md ring-1 ring-red-500/30'
+                            : 'bg-slate-50 hover:bg-slate-100 dark:bg-white/[0.02] dark:hover:bg-white/[0.04] border-slate-200 dark:border-white/[0.08] hover:border-red-500/30'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -309,18 +309,18 @@ export default function UnifiedGatewayPage() {
                             className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                               role === 'management'
                                 ? 'bg-red-600 text-white'
-                                : 'bg-white/[0.05] text-slate-400'
+                                : 'bg-slate-200 dark:bg-white/[0.05] text-slate-700 dark:text-slate-400'
                             }`}
                           >
                             <Building className="w-4 h-4" />
                           </div>
                           {role === 'management' && (
-                            <CheckCircle2 className="w-4 h-4 text-amber-400" />
+                            <CheckCircle2 className="w-4 h-4 text-amber-500" />
                           )}
                         </div>
                         <div>
-                          <div className="font-bold text-white text-sm">Management</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">
+                          <div className="font-bold text-black dark:text-white text-sm">Management</div>
+                          <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5">
                             Gate scanner, event creation & live roster
                           </div>
                         </div>
@@ -333,7 +333,7 @@ export default function UnifiedGatewayPage() {
                 {tab === 'signup' && (
                   <>
                     <div>
-                      <label className="text-[11px] font-bold uppercase text-slate-400 block mb-1">
+                      <label className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-400 block mb-1">
                         Full Name
                       </label>
                       <div className="relative">
@@ -344,14 +344,14 @@ export default function UnifiedGatewayPage() {
                           onChange={(e) => setName(e.target.value)}
                           placeholder="e.g. K. Nabidul Hasan"
                           required
-                          className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors"
+                          className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.1] text-black dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-bold uppercase text-slate-400 block mb-1">
+                        <label className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-400 block mb-1">
                           {role === 'student' ? 'Enrollment ID' : 'Staff ID'}
                         </label>
                         <input
@@ -360,12 +360,12 @@ export default function UnifiedGatewayPage() {
                           onChange={(e) => setEnrollmentNo(e.target.value)}
                           placeholder={role === 'student' ? 'UNI-2026-8472' : 'MGT-2026-001'}
                           required
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white placeholder-slate-500 font-mono uppercase focus:outline-none focus:border-red-500 transition-colors"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.1] text-black dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-mono uppercase focus:outline-none focus:border-red-500 transition-colors"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] font-bold uppercase text-slate-400 block mb-1">
+                        <label className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-400 block mb-1">
                           Campus Institution
                         </label>
                         <input
@@ -374,7 +374,7 @@ export default function UnifiedGatewayPage() {
                           onChange={(e) => setUniversity(e.target.value)}
                           placeholder="Apex Institute of Technology"
                           required
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors"
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.1] text-black dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors"
                         />
                       </div>
                     </div>
@@ -383,7 +383,7 @@ export default function UnifiedGatewayPage() {
 
                 {/* EMAIL FIELD */}
                 <div>
-                  <label className="text-[11px] font-bold uppercase text-slate-400 block mb-1">
+                  <label className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-400 block mb-1">
                     {tab === 'login' ? 'Email or Enrollment Number' : 'University Email'}
                   </label>
                   <div className="relative">
@@ -400,14 +400,14 @@ export default function UnifiedGatewayPage() {
                           : 'admin@eventra.io'
                       }
                       required
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors"
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.1] text-black dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors"
                     />
                   </div>
                 </div>
 
                 {/* PASSWORD FIELD */}
                 <div>
-                  <label className="text-[11px] font-bold uppercase text-slate-400 block mb-1">
+                  <label className="text-[11px] font-bold uppercase text-slate-700 dark:text-slate-400 block mb-1">
                     Password
                   </label>
                   <div className="relative">
@@ -418,7 +418,7 @@ export default function UnifiedGatewayPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
                       required
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.1] text-white placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors"
+                      className="w-full pl-9 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-300 dark:border-white/[0.1] text-black dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-red-500 transition-colors"
                     />
                   </div>
                 </div>
@@ -447,21 +447,21 @@ export default function UnifiedGatewayPage() {
               </form>
 
               {/* QUICK DEMO CREDENTIAL BUTTONS */}
-              <div className="mt-6 pt-5 border-t border-red-500/15">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block text-center mb-2.5">
+              <div className="mt-6 pt-5 border-t border-slate-200 dark:border-red-500/15">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block text-center mb-2.5">
                   Quick Demo Access
                 </span>
                 <div className="grid grid-cols-2 gap-2 text-[11px]">
                   <button
                     type="button"
                     onClick={() => handleQuickDemoFill('student')}
-                    className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-red-600/10 border border-white/[0.06] hover:border-red-500/25 text-left transition-colors cursor-pointer"
+                    className="p-2.5 rounded-xl bg-slate-50 hover:bg-red-50 dark:bg-white/[0.03] dark:hover:bg-red-600/10 border border-slate-200 dark:border-white/[0.06] hover:border-red-500/30 text-left transition-colors cursor-pointer"
                   >
-                    <div className="font-bold text-red-300 flex items-center gap-1.5">
-                      <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
+                    <div className="font-bold text-red-600 dark:text-red-300 flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5 text-amber-500" />
                       <span>Demo Student</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                    <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5 truncate font-medium">
                       k.nabidul.hasan@university.edu
                     </div>
                   </button>
@@ -469,13 +469,13 @@ export default function UnifiedGatewayPage() {
                   <button
                     type="button"
                     onClick={() => handleQuickDemoFill('management')}
-                    className="p-2.5 rounded-xl bg-white/[0.03] hover:bg-red-600/10 border border-white/[0.06] hover:border-red-500/25 text-left transition-colors cursor-pointer"
+                    className="p-2.5 rounded-xl bg-slate-50 hover:bg-amber-50 dark:bg-white/[0.03] dark:hover:bg-red-600/10 border border-slate-200 dark:border-white/[0.06] hover:border-amber-500/30 text-left transition-colors cursor-pointer"
                   >
-                    <div className="font-bold text-amber-300 flex items-center gap-1.5">
-                      <Building className="w-3.5 h-3.5 text-red-400" />
+                    <div className="font-bold text-amber-600 dark:text-amber-300 flex items-center gap-1.5">
+                      <Building className="w-3.5 h-3.5 text-red-500" />
                       <span>Demo Management</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 mt-0.5 truncate">
+                    <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5 truncate font-medium">
                       admin@eventra.io
                     </div>
                   </button>
@@ -485,20 +485,20 @@ export default function UnifiedGatewayPage() {
           )}
 
           {/* Quick links to explore both portals */}
-          <div className="mt-6 flex items-center justify-center gap-6 text-xs text-slate-400">
+          <div className="mt-6 flex items-center justify-center gap-6 text-xs text-slate-700 dark:text-slate-400 font-medium">
             <button
               onClick={() => router.push('/student')}
-              className="hover:text-red-400 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="hover:text-red-600 dark:hover:text-red-400 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <GraduationCap className="w-4 h-4 text-red-400" />
+              <GraduationCap className="w-4 h-4 text-red-500" />
               <span>Student Portal ({events.length} Events)</span>
             </button>
-            <span className="text-slate-600">·</span>
+            <span className="text-slate-400 dark:text-slate-600">·</span>
             <button
               onClick={() => router.push('/management')}
-              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
-              <Building className="w-4 h-4 text-amber-400" />
+              <Building className="w-4 h-4 text-amber-500" />
               <span>Management Suite</span>
             </button>
           </div>

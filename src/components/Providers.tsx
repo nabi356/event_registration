@@ -19,6 +19,11 @@ const ManagementFaceScanGateModal = dynamic(
   { ssr: false }
 );
 
+const ManagementQRScannerModal = dynamic(
+  () => import('@/components/ManagementDashboard/ManagementQRScannerModal').then((m) => m.ManagementQRScannerModal),
+  { ssr: false }
+);
+
 function GlobalModals() {
   const {
     isFaceEnrollModalOpen,
@@ -68,12 +73,12 @@ function GlobalModals() {
         }}
       />
 
-      {/* Management Rapid Gate Check-in Modal (QR or ID) */}
-      <RapidGateCheckInModal
+      {/* Management Optical QR Scanner Modal (Real vs Fake Pass Verifier) */}
+      <ManagementQRScannerModal
         isOpen={isRapidGateModalOpen}
         selectedEvent={selectedEvent}
         onClose={() => setIsRapidGateModalOpen(false)}
-        onCheckInLogged={() => {
+        onVerificationLogged={() => {
           refreshCheckIns();
           refreshSecurityTelemetry();
           refreshEvents();

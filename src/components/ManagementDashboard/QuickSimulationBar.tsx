@@ -39,15 +39,15 @@ export function QuickSimulationBar() {
           <span>Face Scan Entry</span>
         </button>
 
-        {/* Rapid Gate Check-in Button */}
+        {/* Optical QR Scanner Button */}
         <button
           id="btn-simulate-checkin-action"
           onClick={() => setIsRapidGateModalOpen(true)}
-          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/35 text-emerald-300 text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-950/30"
-          title="Rapid Gate check-in via QR or unique enrollment ID"
+          className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-amber-950/30"
+          title="Optical QR Scanner (Verify Real vs Fake Pass)"
         >
           <UserCheck className="w-3.5 h-3.5" />
-          <span>Rapid Gate Check-in</span>
+          <span>Optical QR Scanner</span>
         </button>
 
         {/* Flag Security Exception Button */}

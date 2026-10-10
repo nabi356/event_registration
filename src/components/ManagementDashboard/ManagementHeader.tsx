@@ -15,6 +15,7 @@ import {
   Sun,
   Moon,
   Ticket,
+  QrCode,
 } from 'lucide-react';
 import { useEventSystem } from '@/context/EventSystemContext';
 
@@ -33,6 +34,7 @@ export function ManagementHeader({
     setSelectedEvent,
     events,
     setIsFaceScanGateModalOpen,
+    setIsRapidGateModalOpen,
     setIsEventFormModalOpen,
     setEventToEdit,
     currentUser,
@@ -163,6 +165,16 @@ export function ManagementHeader({
           >
             <Scan className="w-3.5 h-3.5 text-amber-400" />
             <span className="hidden sm:inline">Face Gate</span>
+          </button>
+
+          {/* Optical QR Scanner CTA (Real vs Fake Pass Verifier) */}
+          <button
+            onClick={() => setIsRapidGateModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-bold text-amber-300 transition-all cursor-pointer transform hover:scale-[1.02] shadow-sm"
+            title="Open Optical QR Pass Scanner (Real/Fake Verifier)"
+          >
+            <QrCode className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">QR Scanner</span>
           </button>
 
           {/* New Event CTA */}
