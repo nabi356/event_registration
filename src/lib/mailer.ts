@@ -61,17 +61,19 @@ function getTransporter(): Transporter | null {
 
   if (!transporter) {
     const port = Number(env('SMTP_PORT') || '587');
+    const isImplicitTls = port === 465 || port === 2465;
     transporter = nodemailer.createTransport({
       host: env('SMTP_HOST'),
       port,
-      // Implicit TLS only on 465; 587 and others upgrade via STARTTLS.
-      secure: port === 465,
+      // Implicit TLS on 465/2465; ports 587/2587 upgrade via STARTTLS.
+      secure: isImplicitTls,
+      tls: { servername: env('SMTP_HOST') },
       auth: { user: env('SMTP_USER'), pass: env('SMTP_PASS') },
       // Registration awaits this send for accurate feedback, so bound how long
       // a slow or unreachable SMTP server can hold the request open.
-      connectionTimeout: 10_000,
-      greetingTimeout: 10_000,
-      socketTimeout: 20_000,
+      connectionTimeout: 20_000,
+      greetingTimeout: 20_000,
+      socketTimeout: 30_000,
       logger: false,
     });
   }
