@@ -5,7 +5,7 @@ import { Event } from '@/models/Event';
 import { Registration } from '@/models/Registration';
 import { CheckIn } from '@/models/CheckIn';
 import { SecurityAlert } from '@/models/SecurityAlert';
-import { verifyDynamicPassToken } from '@/lib/passToken';
+import { verifyScannedPassToken } from '@/lib/passToken';
 import { getAuthUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
@@ -36,10 +36,11 @@ export async function POST(req: NextRequest) {
     let targetUserId: string | null = null;
     let method: 'qr' | 'rapid' = 'rapid';
 
-    // 1. If QR token presented, verify server signature and dynamic window
+    // 1. If QR token presented, verify server signature and validity window.
+    // Handles both the 10-second on-screen pass and the long-lived emailed pass.
     if (qrToken) {
       method = 'qr';
-      const tokenVerification = verifyDynamicPassToken(qrToken);
+      const tokenVerification = verifyScannedPassToken(qrToken);
       if (!tokenVerification.valid) {
         await CheckIn.create({
           eventId: event._id,
@@ -65,7 +66,34 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      targetUserId = tokenVerification.data!.userId;
+      // The pass must belong to the event this gate is scanning for — otherwise
+      // a legitimate pass for event A would open the door at event B.
+      if (tokenVerification.eventId !== event._id.toString()) {
+        await CheckIn.create({
+          eventId: event._id,
+          result: 'flagged',
+          reason: 'Pass issued for a different event',
+          method: 'qr',
+          timestamp: new Date(),
+          expiresAt: eventTTL,
+        });
+
+        await SecurityAlert.create({
+          eventId: event._id,
+          type: 'event_mismatch',
+          note: `Valid pass presented at the wrong gate: token was issued for a different event.`,
+          timestamp: new Date(),
+          expiresAt: eventTTL,
+        });
+
+        return NextResponse.json({
+          success: true,
+          verified: false,
+          reason: 'Pass issued for a different event',
+        });
+      }
+
+      targetUserId = tokenVerification.userId!;
     } else if (identifier) {
       // Find user by enrollmentNo, ticketId, or email
       const clean = identifier.trim().toUpperCase();
@@ -222,7 +250,7 @@ export async function POST(req: NextRequest) {
       userId: user._id,
       eventId: event._id,
       result: 'verified',
-      reason: method === 'qr' ? 'Dynamic QR verified' : 'Rapid Gate pass verified',
+      reason: method === 'qr' ? 'Signed QR pass verified' : 'Rapid Gate pass verified',
       method,
       timestamp: new Date(),
       expiresAt: eventTTL,

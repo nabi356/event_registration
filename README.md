@@ -4,6 +4,8 @@
 
 Built with an **Obsidian Glass** visual system, Eventra combines strict cryptographic verification, localized perimeter geofencing, hardware device binding, live browser facial biometric matching with liveness analysis, overlapping event clash detection, and sub-second multi-terminal synchronization.
 
+> 📐 **Looking for how it all fits together?** See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for the system overview, full tech stack, project structure, data model, the check-in decision ladder, and the security model — or open [`docs/Eventra-System-Overview.docx`](./docs/Eventra-System-Overview.docx) as a Word document. This README covers features and the demo walkthrough.
+
 ---
 
 ## Key Capabilities

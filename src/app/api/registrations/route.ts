@@ -2,7 +2,74 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { Registration } from '@/models/Registration';
 import { Event } from '@/models/Event';
-import { getAuthUser } from '@/lib/auth';
+import { User } from '@/models/User';
+import { getAuthUser, TokenPayload } from '@/lib/auth';
+import { generateEventPassToken } from '@/lib/passToken';
+import { sendRegistrationConfirmation } from '@/lib/mailer';
+
+// The gate admits attendees until 2 hours after an event ends; the emailed
+// pass expires on exactly the same boundary so the two never disagree.
+function passExpiryFor(event: { endTime: Date | string }): Date {
+  return new Date(new Date(event.endTime).getTime() + 2 * 60 * 60 * 1000);
+}
+
+interface EventForEmail {
+  _id: { toString(): string };
+  name: string;
+  category?: string;
+  venue: string;
+  startTime: Date | string;
+  endTime: Date | string;
+}
+
+/**
+ * Build and send the confirmation email for a registration.
+ *
+ * Never throws and never blocks on infrastructure: a failure here is logged
+ * and reported back as `emailSent: false`, while the registration itself stays
+ * committed either way.
+ */
+async function emailRegistrationConfirmation(
+  authUser: TokenPayload,
+  event: EventForEmail,
+  registration: { ticketId: string; seatTier?: string }
+): Promise<boolean> {
+  try {
+    // The JWT does not carry the institution, so read it from the account.
+    const user = await User.findById(authUser.userId).lean();
+    if (!user?.email) return false;
+
+    const { token, expiresAt } = generateEventPassToken(
+      authUser.userId,
+      event._id.toString(),
+      authUser.enrollmentNo,
+      passExpiryFor(event)
+    );
+
+    const result = await sendRegistrationConfirmation({
+      attendeeName: authUser.name,
+      attendeeEmail: user.email,
+      enrollmentNo: authUser.enrollmentNo,
+      university: user.university || '—',
+      ticketId: registration.ticketId,
+      seatTier: registration.seatTier || 'Standard Admission',
+      event: {
+        name: event.name,
+        category: event.category || 'General Event',
+        venue: event.venue,
+        startTime: new Date(event.startTime),
+        endTime: new Date(event.endTime),
+      },
+      passToken: token,
+      passExpiresAt: expiresAt,
+    });
+
+    return result.sent;
+  } catch (error) {
+    console.error('Registration confirmation email error:', error);
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,10 +120,18 @@ export async function POST(req: NextRequest) {
       // Re-activate cancelled registration
       existing.status = 'Registered';
       await existing.save();
+
+      const emailSent = await emailRegistrationConfirmation(
+        authUser,
+        event as unknown as EventForEmail,
+        existing
+      );
+
       return NextResponse.json({
         success: true,
         message: 'Registration reactivated successfully!',
         registration: existing,
+        emailSent,
       });
     }
 
@@ -72,10 +147,21 @@ export async function POST(req: NextRequest) {
       seatTier: seatTier || 'Standard Admission',
     });
 
+    // Awaiting this gives the client an accurate "pass emailed" confirmation;
+    // the mailer swallows its own failures and is bounded by SMTP timeouts.
+    const emailSent = await emailRegistrationConfirmation(
+      authUser,
+      event as unknown as EventForEmail,
+      registration
+    );
+
     return NextResponse.json({
       success: true,
-      message: 'Successfully registered for event!',
+      message: emailSent
+        ? 'Successfully registered for event! Your entry pass has been emailed.'
+        : 'Successfully registered for event!',
       registration,
+      emailSent,
     });
   } catch (error: any) {
     console.error('Registration error:', error);

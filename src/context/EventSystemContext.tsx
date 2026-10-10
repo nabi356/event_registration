@@ -51,7 +51,8 @@ interface EventSystemContextType {
 
   // Dynamic QR & Timer
   qrValue: string;
-  qrCountdown: number;
+  /** ISO timestamp until which the current pass is valid ('' when none). */
+  qrValidUntil: string;
   qrRefreshKey: number;
 
   // Geo-Fence & Hardware Device Lock
@@ -137,8 +138,9 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
   // Dynamic QR
-  const [qrCountdown, setQrCountdown] = useState<number>(10);
+  // Long-lived event pass (no rotation, no time limit until the event ends).
   const [qrValue, setQrValue] = useState<string>('');
+  const [qrValidUntil, setQrValidUntil] = useState<string>('');
   const [qrRefreshKey, setQrRefreshKey] = useState<number>(0);
 
   // Geo-Fence & Device verification
@@ -362,74 +364,57 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
     }
   }, [currentUser, refreshMyRegistrations, refreshCheckIns, refreshSecurityTelemetry]);
 
-  // Dynamic Pass Token (STUDENT ONLY for registered event)
+  // Event Pass (Student)
+  // Fetches the long-lived signed pass for the selected event once per
+  // selection/login/registration. No geo-fence, device lock, or 10-second
+  // rotation is involved — the token stays valid until the event ends.
   const fetchPassToken = useCallback(async () => {
     if (!currentUser || currentUser.role !== 'student' || !selectedEvent?.id) {
       setQrValue('');
+      setQrValidUntil('');
       return;
     }
 
-    let deviceId = typeof window !== 'undefined' ? localStorage.getItem('eventra_device_id') : null;
-    if (!deviceId) {
-      deviceId = `DEV-${Math.random().toString(36).substring(2, 9).toUpperCase()}-${Date.now().toString().slice(-4)}`;
-      if (typeof window !== 'undefined') localStorage.setItem('eventra_device_id', deviceId);
+    const isRegistered = myRegistrations.some(
+      (r) => r.event?.id === selectedEvent.id || (r as { eventId?: string }).eventId === selectedEvent.id
+    );
+    if (!isRegistered) {
+      setQrValue('');
+      setQrValidUntil('');
+      return;
     }
 
     try {
       const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('eventra_token') : null);
-      const res = await fetch('/api/pass/token', {
+      const res = await fetch('/api/pass/event', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: authToken ? `Bearer ${authToken}` : '',
         },
-        body: JSON.stringify({
-          eventId: selectedEvent.id,
-          deviceId,
-          userLat: userCoords?.lat,
-          userLng: userCoords?.lng,
-        }),
+        body: JSON.stringify({ eventId: selectedEvent.id }),
       });
 
       const data = await res.json();
       if (data.success && data.token) {
         setQrValue(data.token);
-        if (data.secondsRemaining) {
-          setQrCountdown(data.secondsRemaining);
-        }
-        if (data.deviceStatus) {
-          setDeviceLockStatus(data.deviceStatus);
-        }
-        if (data.geoStatus) {
-          setGeoFenceStatus(data.geoStatus);
-        }
+        setQrValidUntil(data.validUntil || '');
       } else {
         setQrValue('');
+        setQrValidUntil('');
       }
     } catch {
       setQrValue('');
+      setQrValidUntil('');
     }
     setQrRefreshKey((k) => k + 1);
-  }, [currentUser, selectedEvent?.id, token, userCoords]);
+  }, [currentUser, selectedEvent?.id, token, myRegistrations]);
 
-  // Pass rotation 1s interval timer
+  // Fetch the event pass whenever the selection, user, or registrations change.
+  // (Pass is static, so there is no rotation interval — one fetch per change.)
   useEffect(() => {
-    if (currentUser?.role === 'student' && selectedEvent?.id) {
-      fetchPassToken();
-
-      const timer = setInterval(() => {
-        setQrCountdown((prev) => {
-          if (prev <= 1) {
-            fetchPassToken();
-            return 10;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
-    }
-  }, [currentUser?.role, selectedEvent?.id, fetchPassToken]);
+    fetchPassToken();
+  }, [fetchPassToken]);
 
   // Register for event (Student Action)
   const registerForEvent = async (eventId: string): Promise<boolean> => {
@@ -456,7 +441,13 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
         return false;
       }
 
-      addToast('success', 'Registration Confirmed', 'Digital pass generated for event!');
+      addToast(
+        'success',
+        'Registration Confirmed',
+        data.emailSent
+          ? `Entry pass emailed to ${currentUser.email}. Your live QR is ready below.`
+          : 'Digital pass generated for event!'
+      );
       await refreshEvents();
       await refreshMyRegistrations();
       await fetchPassToken();
@@ -731,7 +722,7 @@ export function EventSystemProvider({ children }: { children: React.ReactNode })
         myRegistrations,
         refreshMyRegistrations,
         qrValue,
-        qrCountdown,
+        qrValidUntil,
         qrRefreshKey,
         geoFenceStatus,
         setGeoFenceStatus,

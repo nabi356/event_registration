@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import {
   QrCode,
@@ -9,9 +9,7 @@ import {
   ShieldCheck,
   MapPin,
   Clock,
-  Smartphone,
   AlertTriangle,
-  Lock,
   CheckCircle2,
   Calendar,
   ArrowRight,
@@ -26,10 +24,8 @@ export function DigitalTicket3D() {
     isTicketFlipped,
     flipTicket,
     qrValue,
-    qrCountdown,
+    qrValidUntil,
     qrRefreshKey,
-    geoFenceStatus,
-    deviceLockStatus,
     currentUser,
     myRegistrations,
     registerForEvent,
@@ -56,15 +52,13 @@ export function DigitalTicket3D() {
   );
   const isRegistered = Boolean(userRegistration);
 
-  // Determine if QR is blocked due to geofence or device lock
-  const isGeoBlocked = geoFenceStatus !== 'verified';
-  const isDeviceBlocked = deviceLockStatus === 'mismatch';
-  const isPassBlocked = isGeoBlocked || isDeviceBlocked;
-
-  // Circular progress calculations for 10s timer
-  const radius = 18;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (qrCountdown / 10) * circumference;
+  // Circular progress calculations for 10s timer removed — the pass is static
+  // and has no time limit until the event ends.
+  const validityLabel = qrValidUntil
+    ? new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(
+        new Date(qrValidUntil)
+      )
+    : 'event end';
 
   const handleShowQrClick = () => {
     if (!currentUser) {
@@ -260,7 +254,7 @@ export function DigitalTicket3D() {
 
             <p className="text-[11px] text-center text-slate-400 mt-2.5">
               {isRegistered
-                ? 'Tap to display cryptographic entry code with dynamic refresh'
+                ? 'Tap to display your entry pass. Valid until the event ends — no refresh needed.'
                 : 'Zero-trust verified entry requires confirmed event registration'}
             </p>
           </div>
@@ -293,36 +287,11 @@ export function DigitalTicket3D() {
               </div>
             </div>
 
-            {/* Circular Countdown Badge */}
+            {/* Static valid-until badge (the pass does not rotate) */}
             <div className="flex items-center gap-2 bg-white/[0.04] px-2.5 py-1 rounded-full border border-white/[0.08]">
-              <div className="relative w-5 h-5 flex items-center justify-center">
-                <svg className="w-5 h-5 transform -rotate-90">
-                  <circle
-                    cx="10"
-                    cy="10"
-                    r={radius / 2.3}
-                    stroke="rgba(255,255,255,0.15)"
-                    strokeWidth="2"
-                    fill="transparent"
-                  />
-                  <circle
-                    cx="10"
-                    cy="10"
-                    r={radius / 2.3}
-                    stroke="#3B82F6"
-                    strokeWidth="2"
-                    fill="transparent"
-                    strokeDasharray={2 * Math.PI * (radius / 2.3)}
-                    strokeDashoffset={
-                      2 * Math.PI * (radius / 2.3) -
-                      (qrCountdown / 10) * (2 * Math.PI * (radius / 2.3))
-                    }
-                    className="transition-all duration-300 ease-linear"
-                  />
-                </svg>
-              </div>
+              <Clock className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-[11px] font-mono font-medium text-slate-200">
-                Refreshes in {qrCountdown < 10 ? `0${qrCountdown}` : qrCountdown}s
+                Valid until {validityLabel}
               </span>
             </div>
           </div>
@@ -336,7 +305,6 @@ export function DigitalTicket3D() {
                 initial={{ opacity: 0.85, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.2 }}
-                className={isPassBlocked ? 'filter blur-md opacity-30 select-none' : ''}
               >
                 <QRCodeSVG
                   value={qrValue || `EVTRA-${selectedEvent.id}-TOKEN`}
@@ -347,46 +315,6 @@ export function DigitalTicket3D() {
                   fgColor="#0B0F19"
                 />
               </motion.div>
-
-              {/* OVERLAY: Geo-Fence or Device Blocked State */}
-              <AnimatePresence>
-                {isPassBlocked && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 rounded-2xl bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center border border-white/[0.15]"
-                  >
-                    {isGeoBlocked ? (
-                      <>
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-2">
-                          <AlertTriangle className="w-5 h-5" />
-                        </div>
-                        <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
-                          Check-in unavailable
-                        </h4>
-                        <p className="text-[11px] text-slate-300 mt-1 leading-snug">
-                          {geoFenceStatus === 'outside'
-                            ? 'Move within 50m of the event venue to activate your ticket.'
-                            : 'Enable device location services to verify perimeter access.'}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-2">
-                          <Lock className="w-5 h-5" />
-                        </div>
-                        <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider">
-                          Check-in blocked
-                        </h4>
-                        <p className="text-[11px] text-slate-300 mt-1 leading-snug">
-                          This ticket is associated with another device session.
-                        </p>
-                      </>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
 
             {/* Cryptographic Hash Metadata */}
@@ -397,56 +325,21 @@ export function DigitalTicket3D() {
             </div>
           </div>
 
-          {/* Verification Status Pills */}
+          {/* Pass validity info */}
           <div className="space-y-2 py-2">
-            {/* Geo Verification Status */}
-            <div
-              className={`flex items-center justify-between p-2.5 rounded-xl border transition-colors ${
-                geoFenceStatus === 'verified'
-                  ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300'
-                  : 'bg-amber-500/10 border-amber-500/25 text-amber-300'
-              }`}
-            >
+            <div className="flex items-center justify-between p-2.5 rounded-xl border bg-emerald-500/10 border-emerald-500/25 text-emerald-300">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">Valid until the event ends</span>
+              </div>
+              <span className="text-[11px] font-mono">{validityLabel}</span>
+            </div>
+            <div className="flex items-center justify-between p-2.5 rounded-xl border bg-white/[0.04] border-white/[0.08] text-slate-300">
               <div className="flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">
-                  {geoFenceStatus === 'verified'
-                    ? 'Location Verified'
-                    : geoFenceStatus === 'outside'
-                    ? 'Outside Zone (240m)'
-                    : 'Location Unavailable'}
-                </span>
+                <span className="text-xs font-medium">No location needed</span>
               </div>
-              <span className="text-[11px] font-mono">
-                {geoFenceStatus === 'verified'
-                  ? 'Perimeter verified'
-                  : geoFenceStatus === 'outside'
-                  ? '> 50m required'
-                  : 'GPS offline'}
-              </span>
-            </div>
-
-            {/* Device Verification Status */}
-            <div
-              className={`flex items-center justify-between p-2.5 rounded-xl border transition-colors ${
-                deviceLockStatus === 'verified'
-                  ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300'
-                  : 'bg-rose-500/10 border-rose-500/25 text-rose-300'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Smartphone className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">
-                  {deviceLockStatus === 'verified'
-                    ? 'Device Verified'
-                    : 'Device Session Mismatch'}
-                </span>
-              </div>
-              <span className="text-[11px] font-mono">
-                {deviceLockStatus === 'verified'
-                  ? 'Locked to device'
-                  : 'Token rejected'}
-              </span>
+              <span className="text-[11px] font-mono">Works at the gate</span>
             </div>
           </div>
 
